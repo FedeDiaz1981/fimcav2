@@ -3,6 +3,22 @@ import Base from "../../layouts/Base.astro";
 import { getDict, type Locale } from "../../i18n/config";
 import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
 
+import E_01 from '../../../public/images/E_01 .jpg'
+import E_02 from '../../../public/images/E_02 .jpg'
+import E_03 from '../../../public/images/E_03 .jpg'
+
+import I_01 from '../../../public/images/I_01 .jpg'
+import I_02 from '../../../public/images/I_02 .jpg'
+import I_03 from '../../../public/images/I_03 .jpg'
+
+import P_01 from '../../../public/images/P_01 .jpg'
+import P_02 from '../../../public/images/P_02 .jpg'
+import P_03 from '../../../public/images/P_03 .jpg'
+
+import Pl_01 from '../../../public/images/Pl_01 .jpg'
+import Pl_02 from '../../../public/images/Pl_02 .jpg'
+import Pl_03 from '../../../public/images/Pl_03 .jpg'
+
 const { lang } = Astro.params as { lang: Locale };
 const t = getDict(lang);
 //@ts-ignore
@@ -11,21 +27,21 @@ import type { ImageItem, GalleryData } from "../../types/gallery"; // si separas
 
 const Interiores: ImageItem[] = [
   {
-    imagen: "../../../public/images/I_01.jpg",
+    imagen: I_01.src,
     categoria: "Interiores",
     caption: "1",
     capacity: 6,
     model: "Familiar",
   },
   {
-    imagen: "../../../public/images/I_02.jpg",
+    imagen:I_02.src,
     categoria: "Interiores",
     caption: "2",
     capacity: 3,
     model: "Confort",
   },
   {
-    imagen: "../../../public/images/I_03.jpg",
+    imagen: I_03.src,
     categoria: "Interiores",
     caption: "3",
     capacity: 3,
@@ -35,21 +51,21 @@ const Interiores: ImageItem[] = [
 
 const Exteriores: ImageItem[] = [
   {
-    imagen: "../../../public/images/E_01.jpg",
+    imagen: E_01.src,
     categoria: "Exteriores",
     caption: "2",
     capacity: 3,
     model: "Confort",
   },
   {
-    imagen: "../../../public/images/E_02.jpg",
+    imagen: E_02.src,
     categoria: "Exteriores",
     caption: "1",
     capacity: 6,
     model: "Familiar",
   },
   {
-    imagen: "../../../public/images/E_03.jpg",
+    imagen: E_03.src,
     categoria: "Exteriores",
     caption: "3",
     capacity: 3,
@@ -59,17 +75,17 @@ const Exteriores: ImageItem[] = [
 
 const Parque: ImageItem[] = [
   {
-    imagen: "../../../public/images/P_01.jpg",
+    imagen: P_01.src,
     categoria: "Parque",
     caption: "",
   },
   {
-    imagen: "../../../public/images/P_02.jpg",
+    imagen: P_02.src,
     categoria: "Parque",
     caption: "",
   },
   {
-    imagen: "../../../public/images/P_03.jpg",
+    imagen: P_03.src,
     categoria: "Parque",
     caption: "1",
   },
@@ -77,17 +93,17 @@ const Parque: ImageItem[] = [
 
 const Pileta: ImageItem[] = [
   {
-    imagen: "../../../public/images/Pl_01.jpg",
+    imagen: Pl_01.src,
     categoria: "Parque",
     caption: "",
   },
   {
-    imagen: "../../../public/images/Pl_02.jpg",
+    imagen: Pl_02.src,
     categoria: "Parque",
     caption: "",
   },
   {
-    imagen: "../../../public/images/Pl_03.jpg",
+    imagen: Pl_03.src,
     categoria: "Parque",
     caption: "",
   },
