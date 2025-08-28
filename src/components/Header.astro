@@ -1,22 +1,18 @@
 ---
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import logo from "../../public/Logo-03.png";
-
 import { locales, defaultLocale, type Locale, getDict } from '../i18n/config';
 
 type Props = { lang?: Locale };
 const { lang } = Astro.props as Props;
 
-// 1) Determinar locale (prop > URL > default)
 const seg1 = Astro.url.pathname.split('/')[1] as Locale;
 const locale: Locale =
   (lang && (locales as readonly string[]).includes(lang) ? lang :
    ((locales as readonly string[]).includes(seg1) ? seg1 : defaultLocale));
 
-// 2) Diccionario
 const t = getDict(locale);
 
-// 3) Rutas (si querés slugs por idioma, después mapeamos)
 const path = Astro.url.pathname;
 const currency = 'ARS';
 const homeHref     = `/${locale}/`;
@@ -24,7 +20,6 @@ const cabanasHref  = `/${locale}/cabañas`;
 const salonHref    = `/${locale}/salon`;
 const reservasHref = `/${locale}/reservas`;
 
-// 4) Labels del menú (i18n con fallback)
 const LABELS = {
   home: t.nav?.home ?? (locale === 'es' ? 'Inicio' : 'Home'),
   cabins: (t as any)?.nav?.cabins ?? (locale === 'es' ? 'Cabañas' : 'Cabins'),
@@ -32,7 +27,6 @@ const LABELS = {
   bookings: (t as any)?.nav?.bookings ?? (locale === 'es' ? 'Reservas' : 'Bookings'),
 };
 
-// 5) Active helper
 const isActive = (href: string) => {
   const n = (s: string) => s.replace(/\/+$/, '');
   return n(Astro.url.pathname) === n(href) ? 'active' : '';
@@ -56,7 +50,7 @@ const isActive = (href: string) => {
       </ul>
     </nav>
 
-    <!-- Derecha: idioma / moneda -->
+    <!-- Derecha -->
     <div class="actions">
       <!-- <LanguageSwitcher locale={locale} path={path} /> -->
       <button class="pill hidden" type="button" data-currency
@@ -80,7 +74,6 @@ const isActive = (href: string) => {
         <!-- <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li> -->
         <li><a class={isActive(reservasHref)} href={reservasHref}>{LABELS.bookings}</a></li>
 
-        <!-- No duplico LanguageSwitcher para evitar que aparezca bajo el header -->
         <li style="display:none !important; padding:12px 4px; display:flex; gap:12px">
           <button class="pill hidden" type="button" data-currency>{currency}</button>
         </li>
@@ -90,18 +83,48 @@ const isActive = (href: string) => {
 </header>
 
 <style>
-.site-header{position:sticky;top:0;background:#fff;border-bottom:1px solid rgba(0,0,0,.06);z-index:50}
+/* ======= PALETA (de Finca) ======= */
+.site-header{
+  --finca:    #505c27; /* base */
+  --finca-700:#343c19;
+  --finca-800:#242912;
+  --accent:   #6ec1e4;
+  --text:     #373a3e; /* neutralish-700 */
+  --muted:    #a2a4a8; /* neutralish-400 */
+  --border:   #d3d6c9; /* finca-200 */
+  --hover:    #f1f2ee; /* finca-50 */
+}
+
+/* ======= Layout ======= */
+.site-header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);z-index:50}
 .site-header__inner{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px}
 .logo img{height:42px}
+
+/* ======= Nav ======= */
 .nav{display:flex;flex:1;justify-content:center}
 .nav ul{display:flex;gap:40px;list-style:none;margin:0;padding:0}
-.nav a{background:none;border:0;cursor:pointer;text-decoration:none;color:#8a4e3a;padding:6px 0}
-.nav a.active,.nav a:hover{color:#C76B4E;box-shadow:inset 0 -2px 0 0 #C76B4E}
+.nav a{
+  background:none;border:0;cursor:pointer;text-decoration:none;
+  color:var(--text);padding:6px 0;transition:color .12s ease, box-shadow .12s ease;
+}
+.nav a.active,.nav a:hover{
+  color:var(--finca-800);
+  box-shadow:inset 0 -2px 0 0 var(--finca-800);
+}
+.nav a:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px; border-radius:2px;
+}
+
+/* ======= Acciones ======= */
 .actions{display:flex;gap:12px}
-.pill{border:0;background:transparent;cursor:pointer;padding:6px 10px;border-radius:999px;color:#C76B4E}
-.pill:hover{background:rgba(0,0,0,.04)}
+.pill{border:0;background:transparent;cursor:pointer;padding:6px 10px;border-radius:999px;color:var(--finca-800)}
+.pill:hover{background:var(--hover)}
+
+/* ======= Hamburguesa ======= */
 .hamburger{display:none;border:0;background:transparent;cursor:pointer;width:36px;height:36px;padding:6px}
-.hamburger .bar{display:block;height:2px;background:#C76B4E;margin:6px 0}
+.hamburger .bar{display:block;height:2px;background:var(--finca-800);margin:6px 0}
+
+/* ======= Mobile ======= */
 @media (max-width:1024px){
   .nav,.actions{display:none}
   .hamburger{display:block}
@@ -109,10 +132,14 @@ const isActive = (href: string) => {
   .logo img{height:34px}
   .site-header.is-open .mobile{display:block}
 }
-.mobile{display:none;position:fixed;inset:64px 0 0 0;background:#fff;padding:16px;border-top:1px solid rgba(0,0,0,.06)}
+.mobile{display:none;position:fixed;inset:64px 0 0 0;background:#fff;padding:16px;border-top:1px solid var(--border)}
 .mobile nav ul{list-style:none;margin:0;padding:0}
-.mobile nav li{border-bottom:1px solid rgba(0,0,0,.06)}
-.mobile nav a,.mobile nav button{display:flex;justify-content:space-between;align-items:center;width:100%;padding:14px 4px;background:none;border:0}
+.mobile nav li{border-bottom:1px solid var(--border)}
+.mobile nav a,.mobile nav button{
+  display:flex;justify-content:space-between;align-items:center;width:100%;
+  padding:14px 4px;background:none;border:0;color:var(--text);
+}
+.mobile nav a:hover{background:var(--hover)}
 </style>
 
 <script>

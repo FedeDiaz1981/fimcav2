@@ -1,71 +1,40 @@
 ---
-// Tipos base
+/* ==== SIN CAMBIOS DE LÓGICA (solo estilos) ==== */
 type Categoria = "Interiores" | "Exteriores" | "Parque" | "Pileta";
-
 type GroupBy = 'category' | 'cabin';
-
-interface ImageItem {
-  imagen: string;
-  categoria: Categoria;
-  caption?: string; // ID de cabaña si existe
-  alt?: string;
-  width?: number;
-  height?: number;
-}
+interface ImageItem { imagen: string; categoria: Categoria; caption?: string; alt?: string; width?: number; height?: number; }
 type GalleryData = Record<Categoria, ImageItem[]>;
-
-// Diccionario mínimo que necesita el componente
 type GalleryDict = {
   aria: { prev: string; next: string; close: string; gallery: string };
   categories: Record<Categoria, string>;
-  badge: { viewMoreCabin: string; backToCategory: string }; // usa {{id}} y {{cat}}
-  cta?: { reserve: string }; // NUEVO: texto del botón
+  badge: { viewMoreCabin: string; backToCategory: string };
+  cta?: { reserve: string };
 };
-
 interface Props {
   data: Partial<GalleryData>;
   intervalMs?: number;
-  dict?: GalleryDict; // i18n inyectado desde tu sistema
-  groupBy?: GroupBy;  // 'category' (default) | 'cabin'
-  reserveUrl?: string;                 // NUEVO: plantilla URL, usa {{id}}
-  reserveTarget?: '_self' | '_blank';  // opcional
+  dict?: GalleryDict;
+  groupBy?: GroupBy;
+  reserveUrl?: string;
+  reserveTarget?: '_self' | '_blank';
 }
-
-// Fallback ES por si no pasan dict
 const esFallback: GalleryDict = {
   aria: { prev: 'Anterior', next: 'Siguiente', close: 'Cerrar', gallery: 'Galería de imágenes' },
   categories: { Interiores: 'Interiores', Exteriores: 'Exteriores', Parque: 'Parque', Pileta: 'Pileta' },
   badge: { viewMoreCabin: 'ver más fotos cabaña {{id}}', backToCategory: 'volver a {{cat}}' },
   cta: { reserve: 'Reservar' },
 };
-
 const { data, intervalMs = 4000, dict, groupBy = 'category', reserveUrl = '', reserveTarget = '_self' } = Astro.props as Props;
 const G = { ...esFallback, ...(dict ?? {}) };
-
 const CAT_ORDER = ( ["Interiores", "Exteriores", "Parque", "Pileta"] as const );
-
-// Helpers SSR para agrupar por cabaña
 const allItemsSSR = CAT_ORDER.flatMap((c) => (data?.[c] ?? []).map((it) => ({...it})));
-const orderedCabinsSSR = Array.from(new Set(allItemsSSR
-  .map(it => it.caption)
-  .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
-));
-
-// Elegimos grupos e inicial según groupBy
+const orderedCabinsSSR = Array.from(new Set(allItemsSSR.map(it => it.caption).filter((v): v is string => typeof v === 'string' && v.trim().length > 0)));
 const orderedCats = CAT_ORDER.filter((c) => (data?.[c]?.length ?? 0) > 0);
 const orderedGroups = groupBy === 'category' ? orderedCats : orderedCabinsSSR;
 const initialGroup = orderedGroups[0] ?? (groupBy === 'category' ? 'Interiores' : '');
-
-function getBatchSSR(key: string) {
-  if (groupBy === 'category') return data?.[key as Categoria] ?? [];
-  // cabin: juntar todas las fotos cuya caption === key
-  return allItemsSSR.filter(it => it.caption && String(it.caption) === String(key));
-}
-
+function getBatchSSR(key: string) { if (groupBy === 'category') return data?.[key as Categoria] ?? []; return allItemsSSR.filter(it => it.caption && String(it.caption) === String(key)); }
 const uid = `gal-${Math.random().toString(36).slice(2)}`;
 const firstBatch = getBatchSSR(String(initialGroup));
-
-// Payloads para el cliente
 const payloadAttr = encodeURIComponent(JSON.stringify(data || {}));
 const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
 ---
@@ -91,12 +60,14 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
       (orderedGroups as string[]).map((key) => (
         <button
           type="button"
-          class="cat-chip inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400 data-[active=true]:bg-gray-900 data-[active=true]:text-white"
+          class="cat-chip inline-flex items-center gap-2 rounded-full border border-neutralish-300 px-3 py-1.5 text-sm
+                 hover:bg-neutralish-50 focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-400
+                 data-[active=true]:bg-finca-800 data-[active=true]:text-white"
           data-cat={key}
           data-active={String(key) === String(initialGroup)}
           aria-pressed={String(key) === String(initialGroup)}
         >
-          <span class="shrink-0" set:html={`<svg aria-hidden='true' viewBox='0 0 24 24' class='w-5 h-5'><circle cx='12' cy='12' r='10' fill='none' stroke='currentColor' stroke-width='1.5'/></svg>`} />
+          <span class="shrink-0" set:html={`<svg aria-hidden='true' viewBox='0 0 24 24' class='w-5 h-5 text-neutralish-600'><circle cx='12' cy='12' r='10' fill='none' stroke='currentColor' stroke-width='1.5'/></svg>`} />
           <span>
             {groupBy === 'category'
               ? G.categories[key as Categoria]
@@ -111,7 +82,9 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
   <div class="relative group">
     <button
       type="button"
-      class="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 backdrop-blur border p-2 shadow hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400"
+      class="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 backdrop-blur
+             border border-neutralish-300 p-2 shadow hover:bg-white text-neutralish-700
+             focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-300"
       aria-label={G.aria.prev}
       data-prev
     >
@@ -119,7 +92,9 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
     </button>
     <button
       type="button"
-      class="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 backdrop-blur border p-2 shadow hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400"
+      class="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 backdrop-blur
+             border border-neutralish-300 p-2 shadow hover:bg-white text-neutralish-700
+             focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-300"
       aria-label={G.aria.next}
       data-next
     >
@@ -127,7 +102,7 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
     </button>
 
     <!-- padding interno + fotos más chicas para separar del borde -->
-    <div class="overflow-hidden rounded-2xl border p-4 sm:px-10 sm:py-4 bg-white">
+    <div class="overflow-hidden rounded-2xl p-4 sm:px-10 sm:py-4 bg-transparent">
       <ul class="flex justify-center gap-4 scroll-smooth snap-x snap-mandatory" data-track tabindex="0" aria-label={G.aria.gallery}>
         {
           firstBatch.map((item, i) => (
@@ -154,36 +129,33 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
 
   <!-- LIGHTBOX -->
   <div class="fixed inset-0 z-[9999] hidden" aria-hidden="true" data-lightbox>
-    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm z-0" data-lb-overlay></div>
+    <div class="absolute inset-0 bg-neutralish-900/80 backdrop-blur-sm z-0" data-lb-overlay></div>
 
-    <button type="button" class="absolute top-4 right-4 z-20 rounded-full bg-white/90 border p-2 shadow focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400" aria-label={G.aria.close} data-lb-close>
-      <svg viewBox="0 0 24 24" class="w-5 h-5"><path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    <button type="button" class="absolute top-4 right-4 z-20 rounded-full bg-white/90 border border-neutralish-300 p-2 shadow focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-300" aria-label={G.aria.close} data-lb-close>
+      <svg viewBox="0 0 24 24" class="w-5 h-5 text-neutralish-700"><path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
     </button>
 
-    <button type="button" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 border p-2 shadow" aria-label={G.aria.prev} data-lb-prev>
+    <button type="button" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 border border-neutralish-300 p-2 shadow text-neutralish-700" aria-label={G.aria.prev} data-lb-prev>
       <svg viewBox="0 0 24 24" class="w-6 h-6"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
     </button>
-    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 border p-2 shadow" aria-label={G.aria.next} data-lb-next>
+    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 border border-neutralish-300 p-2 shadow text-neutralish-700" aria-label={G.aria.next} data-lb-next>
       <svg viewBox="0 0 24 24" class="w-6 h-6"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
     </button>
 
     <figure class="relative z-10 h-full w-full flex items-center justify-center">
       <img data-lb-img class="max-h-[90vh] max-w-[95vw] object-contain will-change-transform select-none" alt="" />
-      {/** sin etiqueta de categoría en lightbox **/}
-      <!-- Badge de cabaña (toggle categoria/cabaña). En groupBy='cabin' queda oculto -->
+      <!-- Badge categoría/cabaña -->
       <button type="button" data-lb-cabin
-        class="absolute bottom-6 left-6 z-20 rounded-full border px-3 py-1.5 text-sm shadow bg-white/90
-               hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400
-               data-[active=true]:bg-gray-900 data-[active=true]:text-white hidden"
+        class="absolute bottom-6 left-6 z-20 rounded-full border border-neutralish-300 px-3 py-1.5 text-sm shadow bg-white/90
+               hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-300
+               data-[active=true]:bg-finca-800 data-[active=true]:text-white hidden"
         aria-pressed="false">
-        <!-- Texto por JS -->
       </button>
-      <!-- Botón RESERVAR (solo visible en modo 'cabin' o cuando se entra a cabaña en el lightbox) -->
+      <!-- CTA RESERVAR -->
       <a data-lb-reserve
-         class="absolute bottom-6 right-6 z-20 rounded-full border px-3 py-1.5 text-sm shadow bg-white/90
-                hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400 hidden"
+         class="absolute bottom-6 right-6 z-20 rounded-full bg-finca-800 text-white px-4 py-2 shadow
+                hover:bg-finca-900 focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-400 border border-transparent hidden"
          rel="nofollow noopener">
-        <!-- Texto por JS -->
       </a>
     </figure>
   </div>
@@ -193,15 +165,10 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
     (() => {
       const root = document.currentScript?.closest('section');
       if (!root) return;
-
-      // Datos desde data-attrs
       let data = {}; let catsMap = {};
       try { data = JSON.parse(decodeURIComponent(root.dataset.payload || '%7B%7D')); } catch (e) { console.error('Payload inválido:', e); return; }
       try { catsMap = JSON.parse(decodeURIComponent(root.dataset.cats || '%7B%7D')); } catch {}
-
       const groupBy = root.dataset.groupBy === 'cabin' ? 'cabin' : 'category';
-
-      // Templates i18n para el badge (sin regex para evitar escapes)
       const tViewTpl = root.dataset.tViewMore || 'ver más fotos cabaña {{id}}';
       const tBackTpl = root.dataset.tBackTo || 'volver a {{cat}}';
       const reserveUrlTpl = root.dataset.reserveUrl || '';
@@ -209,7 +176,6 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
       const tReserve = root.dataset.tReserve || 'Reservar';
       const fmt = (tpl, vars) => (tpl || '').replaceAll('{{id}}', String(vars?.id ?? '')).replaceAll('{{cat}}', String(vars?.cat ?? ''));
       const tCat = (cat) => catsMap?.[cat] || String(cat || '');
-
       const intervalMs = Number(root.dataset.interval || 4000);
       const initialGroup = root.dataset.initial || (groupBy === 'category' ? 'Interiores' : '');
 
@@ -219,21 +185,13 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
       const chips   = Array.from(root.querySelectorAll('.cat-chip'));
       if (!track) return;
 
-      // --- Agrupadores ---
       const CAT_KEYS = Object.keys(data);
       function allImages() { return CAT_KEYS.flatMap(c => (data[c] || []).map((it, i) => ({ ...it, __cat: c, __idx: i })) ); }
-
-      // Mapa de grupos según groupBy
       function buildGroups() {
         if (groupBy === 'category') return { map: data, keys: CAT_KEYS };
-        // cabin
         const map = {};
-        for (const it of allImages()) {
-          const id = (it.caption || '').toString();
-          if (!id) continue;
-          (map[id] ||= []).push(it);
-        }
-        const keys = chips.map(ch => ch.dataset.cat).filter(Boolean); // respeta orden SSR
+        for (const it of allImages()) { const id = (it.caption || '').toString(); if (!id) continue; (map[id] ||= []).push(it); }
+        const keys = chips.map(ch => ch.dataset.cat).filter(Boolean);
         return { map, keys };
       }
       let { map: GROUPS, keys: GROUP_KEYS } = buildGroups();
@@ -245,43 +203,25 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
       let isHoverOrFocus = false;
       let isVisible = true;
 
-      function getGroupItems(key) {
-        const arr = GROUPS?.[key] || [];
-        return arr;
-      }
+      function getGroupItems(key) { return GROUPS?.[key] || []; }
 
       function renderGroup(key) {
         currentGroup = key;
-        chips.forEach(ch => {
-          const active = ch.dataset.cat === key;
-          ch.dataset.active = String(active);
-          ch.setAttribute('aria-pressed', String(active));
-        });
-
+        chips.forEach(ch => { const active = ch.dataset.cat === key; ch.dataset.active = String(active); ch.setAttribute('aria-pressed', String(active)); });
         const items = getGroupItems(key);
         const html = items.map((item, i) => {
           const wh = (item.width && item.height) ? ` width="${item.width}" height="${item.height}"` : '';
-          const alt = item.alt
-            || (groupBy === 'category' ? (item.caption || (tCat(item.categoria) + ' ' + (i+1)))
-            : (item.caption ? 'Cabaña ' + item.caption : (tCat(item.categoria) + ' ' + (i+1))));
+          const alt = item.alt || (groupBy === 'category' ? (item.caption || (tCat(item.categoria) + ' ' + (i+1))) : (item.caption ? 'Cabaña ' + item.caption : (tCat(item.categoria) + ' ' + (i+1))));
           return `
             <li class=\"snap-start flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.333%]\" data-idx=\"${i}\">
               <figure class=\"h-full flex flex-col\">
-                <img
-                  src=\"${item.imagen}\"
-                  alt=\"${escapeHtml(alt)}\"
-                  loading=\"${i < 3 ? 'eager' : 'lazy'}\"
-                  decoding=\"async\"
-                  fetchpriority=\"${i === 0 ? 'high' : 'auto'}\"${wh}
-                  class=\"w-full h-56 sm:h-64 lg:h-72 object-cover select-none pointer-events-auto rounded-2xl\"
-                />
+                <img src=\"${item.imagen}\" alt=\"${escapeHtml(alt)}\" loading=\"${i < 3 ? 'eager' : 'lazy'}\" decoding=\"async\" fetchpriority=\"${i === 0 ? 'high' : 'auto'}\"${wh}
+                     class=\"w-full h-56 sm:h-64 lg:h-[30rem] object-cover select-none pointer-events-auto rounded-2xl\" />
               </figure>
             </li>`;
         }).join('');
-
         track.innerHTML = html;
-        pageIndex = 0;
-        track.scrollTo({ left: 0, behavior: 'auto' });
+        pageIndex = 0; track.scrollTo({ left: 0, behavior: 'auto' });
         slidesPerPage = getSlidesPerPage();
       }
 
@@ -326,13 +266,9 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
       const lbCabinBtn= root.querySelector('[data-lb-cabin]');
       const lbReserve = root.querySelector('[data-lb-reserve]');
 
-      let lbMode = 'category'; // 'category' | 'cabin' (solo aplica cuando groupBy === 'category')
-      let activeCabinId = null; // string | null
-      let returnPoint = null;   // { cat: string, index: number } | null
-      let lightboxOpen = false;
-      let lbIndex = 0;
-      let zoom = 1, panX = 0, panY = 0;
-      let drag = false, startX = 0, startY = 0;
+      let lbMode = 'category'; let activeCabinId = null; let returnPoint = null;
+      let lightboxOpen = false; let lbIndex = 0;
+      let zoom = 1, panX = 0, panY = 0; let drag = false, startX = 0, startY = 0;
 
       track.addEventListener('click', (e) => {
         const t = e.target; if (!(t instanceof Element)) return;
@@ -342,13 +278,8 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
       });
 
       function openLightbox(idx) {
-        if (groupBy === 'category') {
-          const cats = GROUP_KEYS; // para returnPoint usamos key actual (categoría)
-          returnPoint = { cat: String(currentGroup), index: Number.isFinite(idx) ? idx : 0 };
-          lbMode = 'category'; activeCabinId = null;
-        } else {
-          returnPoint = null; lbMode = 'category'; activeCabinId = null;
-        }
+        if (groupBy === 'category') { returnPoint = { cat: String(currentGroup), index: Number.isFinite(idx) ? idx : 0 }; lbMode = 'category'; activeCabinId = null; }
+        else { returnPoint = null; lbMode = 'category'; activeCabinId = null; }
         lbIndex = Number.isFinite(idx) ? idx : 0;
         updateLightbox();
         if (lb) { lb.classList.remove('hidden'); lb.setAttribute('aria-hidden','false'); }
@@ -364,24 +295,14 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
 
       function getCabinSet(cabinId) { if (!cabinId) return []; return allImages().filter(it => it.caption && String(it.caption) === String(cabinId)); }
       function getActiveSet() {
-        if (groupBy === 'cabin') {
-          return getGroupItems(currentGroup).map((it, i) => ({ ...it, __cat: it.categoria, __idx: i }));
-        }
-        // groupBy === 'category'
+        if (groupBy === 'cabin') { return getGroupItems(currentGroup).map((it, i) => ({ ...it, __cat: it.categoria, __idx: i })); }
         if (lbMode === 'cabin' && activeCabinId) return getCabinSet(activeCabinId);
         return getGroupItems(currentGroup).map((it, i) => ({ ...it, __cat: currentGroup, __idx: i }));
       }
 
       function updateCabinBadge(it) {
         if (!lbCabinBtn) return;
-        if (groupBy === 'cabin') { // oculto permanente en modo agrupación por cabaña
-          lbCabinBtn.classList.add('hidden');
-          lbCabinBtn.removeAttribute('data-active');
-          lbCabinBtn.setAttribute('aria-pressed','false');
-          lbCabinBtn.textContent='';
-          delete lbCabinBtn.dataset.cabinId;
-          return;
-        }
+        if (groupBy === 'cabin') { lbCabinBtn.classList.add('hidden'); lbCabinBtn.removeAttribute('data-active'); lbCabinBtn.setAttribute('aria-pressed','false'); lbCabinBtn.textContent=''; delete lbCabinBtn.dataset.cabinId; return; }
         const hasCabin = !!it.caption;
         if (!hasCabin) { lbCabinBtn.classList.add('hidden'); lbCabinBtn.removeAttribute('data-active'); lbCabinBtn.setAttribute('aria-pressed','false'); lbCabinBtn.textContent=''; delete lbCabinBtn.dataset.cabinId; return; }
         lbCabinBtn.classList.remove('hidden');
@@ -399,22 +320,13 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
 
       function updateReserveBtn(it) {
         if (!lbReserve) return;
-        // Mostrar si: agrupado por cabaña, o estamos en vista de cabaña dentro del lightbox
         const show = (groupBy === 'cabin') || (groupBy === 'category' && lbMode === 'cabin');
         if (!show) { lbReserve.classList.add('hidden'); return; }
-
-        // Determinar id de cabaña
-        const id = (groupBy === 'cabin')
-          ? String(currentGroup || it.caption || '')
-          : (it.caption ? String(it.caption) : '');
-
+        const id = (groupBy === 'cabin') ? String(currentGroup || it.caption || '') : (it.caption ? String(it.caption) : '');
         if (!id) { lbReserve.classList.add('hidden'); return; }
-
         lbReserve.textContent = tReserve;
         lbReserve.setAttribute('target', reserveTarget);
-        const href = reserveUrlTpl
-          ? reserveUrlTpl.replaceAll('{{id}}', encodeURIComponent(id))
-          : `/reservas?cabana=${encodeURIComponent(id)}`; // fallback sensato
+        const href = (root.dataset.reserveUrl || '').replaceAll('{{id}}', encodeURIComponent(id)) || `/reservas?cabana=${encodeURIComponent(id)}`;
         lbReserve.setAttribute('href', href);
         lbReserve.classList.remove('hidden');
       }
@@ -424,18 +336,15 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
         lbIndex = (lbIndex + set.length) % set.length; const it = set[lbIndex];
         if (lbImg instanceof HTMLImageElement) { lbImg.src = it.imagen; lbImg.alt = it.alt || it.caption || (tCat(it.categoria) || ''); }
         else if (lbImg) { lbImg.setAttribute('src', it.imagen); lbImg.setAttribute('alt', it.alt || it.caption || (tCat(it.categoria) || '')); }
-        updateCabinBadge(it);
-        updateReserveBtn(it);
+        updateCabinBadge(it); updateReserveBtn(it);
         preloadNeighbor(); resetZoom();
       }
 
-      // Toggle categoría/cabaña con el badge (solo cuando groupBy === 'category')
       if (lbCabinBtn && groupBy === 'category') {
         lbCabinBtn.addEventListener('click', () => {
           const cabinId = lbCabinBtn.dataset.cabinId; if (!cabinId) return;
           if (lbMode !== 'cabin') {
-            const currentSet = getActiveSet();
-            const currentItem = currentSet[(lbIndex + currentSet.length) % currentSet.length];
+            const currentSet = getActiveSet(); const currentItem = currentSet[(lbIndex + currentSet.length) % currentSet.length];
             lbMode = 'cabin'; activeCabinId = cabinId;
             const cabinSet = getCabinSet(cabinId);
             const sameIdx = cabinSet.findIndex(x => x.imagen === currentItem.imagen);
@@ -444,7 +353,7 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
           } else {
             lbMode = 'category'; activeCabinId = null;
             if (returnPoint) {
-              currentGroup = returnPoint.cat; // volvemos a la categoría previa
+              currentGroup = returnPoint.cat;
               chips.forEach(ch => { const active = ch.dataset.cat === currentGroup; ch.dataset.active = String(active); ch.setAttribute('aria-pressed', String(active)); });
               lbIndex = returnPoint.index;
             }
@@ -476,7 +385,6 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
 
       function preloadNeighbor() { const set = getActiveSet(); if (!set.length) return; const n1 = new Image(); n1.src = set[(lbIndex + 1) % set.length]?.imagen || ''; const n2 = new Image(); n2.src = set[(lbIndex - 1 + set.length) % set.length]?.imagen || ''; }
 
-      // Init
       renderGroup(currentGroup);
       startAutoplay();
       document.addEventListener('visibilitychange', () => { if (document.hidden) stopAutoplay(); else if (!lightboxOpen) startAutoplay(); });

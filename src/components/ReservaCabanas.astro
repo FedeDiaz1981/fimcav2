@@ -26,18 +26,39 @@ interface Props {
   cabins: Cabin[];
   unavailable: Unavailable[] | Record<string, string[]>;
   onlyCabinId?: string | null;
-  months?: number;             // default 3
-  minDate?: string;            // ISO 'YYYY-MM-DD'
-  dict?: BookingDict;          // i18n
-  defaultNights?: number;      // noches por defecto (default 2)
+  months?: number; // default 3
+  minDate?: string; // ISO 'YYYY-MM-DD'
+  dict?: BookingDict; // i18n
+  defaultNights?: number; // noches por defecto (default 2)
 }
 
 const DEFAULT_DICT: BookingDict = {
-  months: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
-  weekdays: ['Lu','Ma','Mi','Ju','Vi','Sa','Do'],
-  actions: { reserve: 'Reservar', reset: 'Limpiar' },
-  hints: { selectCabin: 'Primero elegí una cabaña.', invalidRange: 'El rango incluye fechas no disponibles.', unavailable: 'No disponible' },
-  legend: { available: 'Disponible', blocked: 'No disponible', selected: 'Seleccionado' },
+  months: [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ],
+  weekdays: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"],
+  actions: { reserve: "Reservar", reset: "Limpiar" },
+  hints: {
+    selectCabin: "Primero elegí una cabaña.",
+    invalidRange: "El rango incluye fechas no disponibles.",
+    unavailable: "No disponible",
+  },
+  legend: {
+    available: "Disponible",
+    blocked: "No disponible",
+    selected: "Seleccionado",
+  },
 };
 
 const {
@@ -52,11 +73,11 @@ const {
 
 const D = dict ?? DEFAULT_DICT;
 
-function normalizeUnavailable(u: Props['unavailable']) {
+function normalizeUnavailable(u: Props["unavailable"]) {
   const map = new Map<string, Set<string>>();
   if (Array.isArray(u)) {
     for (const { cabinId, dates } of u) map.set(cabinId, new Set(dates || []));
-  } else if (u && typeof u === 'object') {
+  } else if (u && typeof u === "object") {
     for (const [cid, dates] of Object.entries(u)) map.set(cid, new Set(dates));
   }
   return map;
@@ -65,24 +86,36 @@ function normalizeUnavailable(u: Props['unavailable']) {
 const UNAV = normalizeUnavailable(unavailable);
 
 // Fechas base SSR
-const today = new Date(); today.setHours(0,0,0,0);
+const today = new Date();
+today.setHours(0, 0, 0, 0);
 const tzOffsetMs = today.getTimezoneOffset() * 60000;
-function toISO(d: Date) { const local = new Date(d.getTime() - tzOffsetMs); return local.toISOString().slice(0,10); }
-const minISO = (typeof minDate === 'string' && /\d{4}-\d{2}-\d{2}/.test(minDate)) ? minDate : toISO(today);
+function toISO(d: Date) {
+  const local = new Date(d.getTime() - tzOffsetMs);
+  return local.toISOString().slice(0, 10);
+}
+const minISO =
+  typeof minDate === "string" && /\d{4}-\d{2}-\d{2}/.test(minDate)
+    ? minDate
+    : toISO(today);
 
 // Payloads al cliente
 const cabinsPayload = encodeURIComponent(JSON.stringify(cabins));
-const uPlain = Object.fromEntries(Array.from(UNAV.entries()).map(([k, set]) => [k, Array.from(set)]));
+const uPlain = Object.fromEntries(
+  Array.from(UNAV.entries()).map(([k, set]) => [k, Array.from(set)])
+);
 const unavailablePayload = encodeURIComponent(JSON.stringify(uPlain));
 const dictPayload = encodeURIComponent(JSON.stringify(D));
 
 const uid = `bk-${Math.random().toString(36).slice(2)}`;
 ---
 
-<section id={uid} class="w-full" data-comp="booking"
+<section
+  id={uid}
+  class="w-full"
+  data-comp="booking"
   data-cabins={cabinsPayload}
   data-unav={unavailablePayload}
-  data-only={onlyCabinId ?? ''}
+  data-only={onlyCabinId ?? ""}
   data-months={months}
   data-min={minISO}
   data-dict={dictPayload}
@@ -90,17 +123,34 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
 >
   <!-- Botonera (oculta si onlyCabinId) -->
   <div class="mb-4 flex flex-wrap gap-2" data-cabin-bar>
-    {(!onlyCabinId) && cabins.map((c, i) => (
-      <button type="button"
-        class="cabin-chip inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400 data-[active=true]:bg-gray-900 data-[active=true]:text-white"
-        data-cabin={c.id}
-        data-active={i===0}
-        aria-pressed={i===0}
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24" class="w-5 h-5 shrink-0"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-        <span>{c.name ?? `Cabaña ${c.id}`}</span>
-      </button>
-    ))}
+    {
+      !onlyCabinId &&
+        cabins.map((c, i) => (
+          <button
+            type="button"
+            class="cabin-chip inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400 data-[active=true]:bg-gray-900 data-[active=true]:text-white"
+            data-cabin={c.id}
+            data-active={i === 0}
+            aria-pressed={i === 0}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              class="w-5 h-5 shrink-0"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+            <span>{c.name ?? `Cabaña ${c.id}`}</span>
+          </button>
+        ))
+    }
   </div>
 
   <div class="rounded-2xl border p-4 sm:p-6 bg-white">
@@ -110,37 +160,72 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       <div class="flex items-center gap-3">
         <label class="text-sm text-gray-700 flex items-center gap-2">
           <span>Noches:</span>
-          <input type="number" min="1" max="30" value={defaultNights} data-nights-input class="w-20 rounded-md border px-2 py-1 text-sm" />
+          <input
+            type="number"
+            min="1"
+            max="30"
+            value={defaultNights}
+            data-nights-input
+            class="w-20 rounded-md border px-2 py-1 text-sm"
+          />
         </label>
-        <button type="button" data-reset
-          class="rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400">{D.actions.reset}</button>
+        <button
+          type="button"
+          data-reset
+          class="rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400"
+          >{D.actions.reset}</button
+        >
       </div>
     </div>
 
     <!-- Calendarios -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" data-calendars></div>
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      data-calendars
+    >
+    </div>
 
     <!-- Formulario de contacto -->
     <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
       <label class="text-sm grid gap-1">
         <span>Nombre *</span>
-        <input type="text" data-fname required class="rounded-md border px-3 py-2 text-sm" />
+        <input
+          type="text"
+          data-fname
+          required
+          class="rounded-md border px-3 py-2 text-sm"
+        />
       </label>
       <label class="text-sm grid gap-1">
         <span>Celular *</span>
-        <input type="tel" data-phone required class="rounded-md border px-3 py-2 text-sm" />
+        <input
+          type="tel"
+          data-phone
+          required
+          class="rounded-md border px-3 py-2 text-sm"
+        />
       </label>
       <label class="text-sm grid gap-1">
         <span>Email *</span>
-        <input type="email" data-mail required class="rounded-md border px-3 py-2 text-sm" />
+        <input
+          type="email"
+          data-mail
+          required
+          class="rounded-md border px-3 py-2 text-sm"
+        />
       </label>
     </div>
 
     <!-- Resumen y CTA -->
-    <div class="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div
+      class="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+    >
       <div class="text-sm" data-summary></div>
-      <button type="button" data-submit
-        class="rounded-full bg-gray-900 text-white px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+      <button
+        type="button"
+        data-submit
+        class="rounded-full bg-gray-900 text-white px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+      >
         {D.actions.reserve}
       </button>
     </div>
@@ -149,21 +234,43 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
 
     <!-- Leyenda -->
     <div class="mt-4 flex items-center gap-4 text-xs text-gray-600">
-      <span class="inline-flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-gray-200"></span>{D.legend.blocked}</span>
-      <span class="inline-flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-gray-900"></span>{D.legend.selected}</span>
-      <span class="inline-flex items-center gap-1"><span class="inline-block w-3 h-3 rounded border"></span>{D.legend.available}</span>
+      <span class="inline-flex items-center gap-1"
+        ><span class="inline-block w-3 h-3 rounded bg-gray-200"></span>{
+          D.legend.blocked
+        }</span
+      >
+      <span class="inline-flex items-center gap-1"
+        ><span class="inline-block w-3 h-3 rounded bg-gray-900"></span>{
+          D.legend.selected
+        }</span
+      >
+      <span class="inline-flex items-center gap-1"
+        ><span class="inline-block w-3 h-3 rounded border"></span>{
+          D.legend.available
+        }</span
+      >
     </div>
   </div>
 
   <!-- Modal de confirmación -->
   <div class="fixed inset-0 z-[9999] hidden" aria-hidden="true" data-modal>
     <div class="absolute inset-0 bg-black/60" data-modal-overlay></div>
-    <div class="relative z-10 h-full w-full flex items-center justify-center p-4">
+    <div
+      class="relative z-10 h-full w-full flex items-center justify-center p-4"
+    >
       <div class="max-w-lg w-full rounded-2xl bg-white p-6 shadow-xl border">
         <h3 class="text-lg font-semibold mb-2">Pedido enviado</h3>
-        <p class="text-sm text-gray-700">Su pedido de reserva fue envíado, nos pondremos en contacto para la confirmación. Gracias por elegirnos.</p>
+        <p class="text-sm text-gray-700">
+          Su pedido de reserva fue envíado, nos pondremos en contacto para la
+          confirmación. Gracias por elegirnos.
+        </p>
         <div class="mt-4 flex justify-end">
-          <button type="button" data-modal-close class="rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50">Cerrar</button>
+          <button
+            type="button"
+            data-modal-close
+            class="rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50"
+            >Cerrar</button
+          >
         </div>
       </div>
     </div>
@@ -171,124 +278,234 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
 
   <script is:inline>
     (() => {
-      const root = document.currentScript?.closest('section');
+      const root = document.currentScript?.closest("section");
       if (!root) return;
 
       // Payloads
-      let CABINS = []; let UNAV = {}; let DICT = {};
-      try { CABINS = JSON.parse(decodeURIComponent(root.dataset.cabins || '%5B%5D')); } catch {}
-      try { UNAV = JSON.parse(decodeURIComponent(root.dataset.unav   || '%7B%7D')); } catch {}
-      try { DICT  = JSON.parse(decodeURIComponent(root.dataset.dict  || '%7B%7D')); } catch {}
-      const ONLY    = root.dataset.only || '';
-      const MONTHS  = Math.max(1, Number(root.dataset.months || 3));
-      const MIN_ISO = root.dataset.min || '';
+      let CABINS = [];
+      let UNAV = {};
+      let DICT = {};
+      try {
+        CABINS = JSON.parse(
+          decodeURIComponent(root.dataset.cabins || "%5B%5D")
+        );
+      } catch {}
+      try {
+        UNAV = JSON.parse(decodeURIComponent(root.dataset.unav || "%7B%7D"));
+      } catch {}
+      try {
+        DICT = JSON.parse(decodeURIComponent(root.dataset.dict || "%7B%7D"));
+      } catch {}
+      const ONLY = root.dataset.only || "";
+      const MONTHS = Math.max(1, Number(root.dataset.months || 3));
+      const MIN_ISO = root.dataset.min || "";
 
       // Estado
       let nights = Math.max(1, Number(root.dataset.nights || 2));
-      let cabinId = ONLY || (CABINS[0]?.id || '');
-      let startISO = '';
-      let endISO = '';
+      let cabinId = ONLY || CABINS[0]?.id || "";
+      let startISO = "";
+      let endISO = "";
       let focusDate = parseISO(MIN_ISO) || todayLocal();
 
       // Refs UI
-      const bar = root.querySelector('[data-cabin-bar]');
-      const nightsInput = root.querySelector('[data-nights-input]');
-      const currentCabinEl = root.querySelector('[data-current-cabin]');
-      const calWrap = root.querySelector('[data-calendars]');
-      const hintEl = root.querySelector('[data-hint]');
-      const summaryEl = root.querySelector('[data-summary]');
-      const resetBtn = root.querySelector('[data-reset]');
-      const submitBtn = root.querySelector('[data-submit]');
-      const fName = root.querySelector('[data-fname]');
-      const fPhone = root.querySelector('[data-phone]');
-      const fMail = root.querySelector('[data-mail]');
+      const bar = root.querySelector("[data-cabin-bar]");
+      const nightsInput = root.querySelector("[data-nights-input]");
+      const currentCabinEl = root.querySelector("[data-current-cabin]");
+      const calWrap = root.querySelector("[data-calendars]");
+      const hintEl = root.querySelector("[data-hint]");
+      const summaryEl = root.querySelector("[data-summary]");
+      const resetBtn = root.querySelector("[data-reset]");
+      const submitBtn = root.querySelector("[data-submit]");
+      const fName = root.querySelector("[data-fname]");
+      const fPhone = root.querySelector("[data-phone]");
+      const fMail = root.querySelector("[data-mail]");
 
-      const modal = root.querySelector('[data-modal]');
-      const modalOv = root.querySelector('[data-modal-overlay]');
-      const modalClose = root.querySelector('[data-modal-close]');
+      const modal = root.querySelector("[data-modal]");
+      const modalOv = root.querySelector("[data-modal-overlay]");
+      const modalClose = root.querySelector("[data-modal-close]");
 
-      if (ONLY) { bar?.classList.add('hidden'); }
+      if (ONLY) {
+        bar?.classList.add("hidden");
+      }
 
       // Botonera de cabañas
-      const chips = Array.from(root.querySelectorAll('.cabin-chip'));
-      chips.forEach(ch => ch.addEventListener('click', () => {
-        const id = ch.getAttribute('data-cabin') || '';
-        if (!id) return;
-        cabinId = id; recomputeFromStart(true);
-        chips.forEach(x => { const act = x === ch; x.dataset.active = String(act); x.setAttribute('aria-pressed', String(act)); });
-        renderAll();
-      }));
+      const chips = Array.from(root.querySelectorAll(".cabin-chip"));
+      chips.forEach((ch) =>
+        ch.addEventListener("click", () => {
+          const id = ch.getAttribute("data-cabin") || "";
+          if (!id) return;
+          cabinId = id;
+          recomputeFromStart(true);
+          chips.forEach((x) => {
+            const act = x === ch;
+            x.dataset.active = String(act);
+            x.setAttribute("aria-pressed", String(act));
+          });
+          renderAll();
+        })
+      );
 
       // Inputs
-      nightsInput?.addEventListener('input', () => {
-        const n = Math.max(1, Math.min(30, Number(nightsInput.value || nights)));
+      nightsInput?.addEventListener("input", () => {
+        const n = Math.max(
+          1,
+          Math.min(30, Number(nightsInput.value || nights))
+        );
         nights = n;
         // Recalcular end en base a start (si no cabe, buscar primer span)
         if (startISO) {
           const fits = isRangeClearFor(cabinId, startISO, nights);
-          endISO = fits ? addDaysISO(startISO, nights) : findFirstSpan(cabinId, MIN_ISO, nights).endISO;
-          if (!endISO) startISO = '';
+          endISO = fits
+            ? addDaysISO(startISO, nights)
+            : findFirstSpan(cabinId, MIN_ISO, nights).endISO;
+          if (!endISO) startISO = "";
         }
         renderAll();
       });
 
-      [fName, fPhone, fMail].forEach(inp => inp?.addEventListener('input', updateSubmitState));
+      [fName, fPhone, fMail].forEach((inp) =>
+        inp?.addEventListener("input", updateSubmitState)
+      );
 
-      resetBtn?.addEventListener('click', () => { startISO = ''; endISO = ''; fName.value=''; fPhone.value=''; fMail.value=''; renderAll(); });
+      resetBtn?.addEventListener("click", () => {
+        startISO = "";
+        endISO = "";
+        fName.value = "";
+        fPhone.value = "";
+        fMail.value = "";
+        renderAll();
+      });
 
-      submitBtn?.addEventListener('click', () => {
-        if (!cabinId || !startISO || !endISO) { hintEl.textContent = DICT.hints?.invalidRange || 'Seleccioná un rango válido.'; return; }
-        if (!fName.value || !fPhone.value || !fMail.value) { return; }
+      submitBtn?.addEventListener("click", () => {
+        if (!cabinId || !startISO || !endISO) {
+          hintEl.textContent =
+            DICT.hints?.invalidRange || "Seleccioná un rango válido.";
+          return;
+        }
+        if (!fName.value || !fPhone.value || !fMail.value) {
+          return;
+        }
         const nightsNum = nightsCount(startISO, endISO);
-        console.log('Reserva exitosa', { cabinId, startISO, endISO, nights: nightsNum, name: fName.value, phone: fPhone.value, mail: fMail.value });
+        console.log("Reserva exitosa", {
+          cabinId,
+          startISO,
+          endISO,
+          nights: nightsNum,
+          name: fName.value,
+          phone: fPhone.value,
+          mail: fMail.value,
+        });
         openModal();
       });
 
-      modalOv?.addEventListener('click', closeModal);
-      modalClose?.addEventListener('click', closeModal);
+      modalOv?.addEventListener("click", closeModal);
+      modalClose?.addEventListener("click", closeModal);
 
-      function openModal() { modal?.classList.remove('hidden'); modal?.setAttribute('aria-hidden','false'); document.body.style.overflow = 'hidden'; }
-      function closeModal() { modal?.classList.add('hidden'); modal?.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; }
+      function openModal() {
+        modal?.classList.remove("hidden");
+        modal?.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      }
+      function closeModal() {
+        modal?.classList.add("hidden");
+        modal?.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }
 
       // --- Utilidades de fechas ---
-      function todayLocal() { const d = new Date(); d.setHours(0,0,0,0); return d; }
-      function parseISO(s) { if (!/^\d{4}-\d{2}-\d{2}$/.test(s||'')) return null; const [y,m,d] = s.split('-').map(Number); const dt = new Date(y, m-1, d); dt.setHours(0,0,0,0); return dt; }
-      function toISO(d) { const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
-      function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth()+n, 1); }
-      function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
-      function daysInMonth(d) { return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); }
-      function dowMondayFirst(d) { const js = d.getDay(); return (js === 0 ? 7 : js); }
+      function todayLocal() {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+      function parseISO(s) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(s || "")) return null;
+        const [y, m, d] = s.split("-").map(Number);
+        const dt = new Date(y, m - 1, d);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+      }
+      function toISO(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      }
+      function addMonths(d, n) {
+        return new Date(d.getFullYear(), d.getMonth() + n, 1);
+      }
+      function startOfMonth(d) {
+        return new Date(d.getFullYear(), d.getMonth(), 1);
+      }
+      function daysInMonth(d) {
+        return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      }
+      function dowMondayFirst(d) {
+        const js = d.getDay();
+        return js === 0 ? 7 : js;
+      }
 
-      function blockedSetFor(cId) { return new Set(UNAV?.[cId] || []); }
-      function isPast(iso) { const min = parseISO(MIN_ISO) || todayLocal(); const d = parseISO(iso); return d < min; }
+      function blockedSetFor(cId) {
+        return new Set(UNAV?.[cId] || []);
+      }
+      function isPast(iso) {
+        const min = parseISO(MIN_ISO) || todayLocal();
+        const d = parseISO(iso);
+        return d < min;
+      }
       function isRangeClearFor(cId, startIso, nights) {
-        const s = parseISO(startIso); if (!s) return false;
+        const s = parseISO(startIso);
+        if (!s) return false;
         const set = blockedSetFor(cId);
-        for (let k = 0; k < nights; k++) { const d = new Date(s); d.setDate(s.getDate()+k); if (set.has(toISO(d))) return false; }
+        for (let k = 0; k < nights; k++) {
+          const d = new Date(s);
+          d.setDate(s.getDate() + k);
+          if (set.has(toISO(d))) return false;
+        }
         return true;
       }
-      function addDaysISO(iso, days) { const d = parseISO(iso); if (!d) return ''; d.setDate(d.getDate() + days); return toISO(d); }
+      function addDaysISO(iso, days) {
+        const d = parseISO(iso);
+        if (!d) return "";
+        d.setDate(d.getDate() + days);
+        return toISO(d);
+      }
       function findFirstFree(cId, fromISO, maxDays = 365) {
         const start = parseISO(fromISO) || todayLocal();
         const cur = new Date(start);
-        for (let i = 0; i < maxDays; i++) { const iso = toISO(cur); if (!isPast(iso) && isRangeClearFor(cId, iso, nights)) return iso; cur.setDate(cur.getDate()+1); }
-        return '';
+        for (let i = 0; i < maxDays; i++) {
+          const iso = toISO(cur);
+          if (!isPast(iso) && isRangeClearFor(cId, iso, nights)) return iso;
+          cur.setDate(cur.getDate() + 1);
+        }
+        return "";
       }
       function findFirstSpan(cId, fromISO, nights, maxDays = 365) {
         const start = parseISO(fromISO) || todayLocal();
         const cur = new Date(start);
-        for (let i=0; i<maxDays; i++) { const iso = toISO(cur); if (!isPast(iso) && isRangeClearFor(cId, iso, nights)) return { startISO: iso, endISO: addDaysISO(iso, nights) }; cur.setDate(cur.getDate()+1); }
-        return { startISO: '', endISO: '' };
+        for (let i = 0; i < maxDays; i++) {
+          const iso = toISO(cur);
+          if (!isPast(iso) && isRangeClearFor(cId, iso, nights))
+            return { startISO: iso, endISO: addDaysISO(iso, nights) };
+          cur.setDate(cur.getDate() + 1);
+        }
+        return { startISO: "", endISO: "" };
       }
 
-      function nightsCount(aISO, bISO) { const a = parseISO(aISO); const b = parseISO(bISO); if (!a || !b) return 0; return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86400000)); }
+      function nightsCount(aISO, bISO) {
+        const a = parseISO(aISO);
+        const b = parseISO(bISO);
+        if (!a || !b) return 0;
+        return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86400000));
+      }
 
-      function recomputeFromStart(restart=false) {
+      function recomputeFromStart(restart = false) {
         startISO = findFirstFree(cabinId, MIN_ISO);
-        endISO = startISO ? addDaysISO(startISO, nights) : '';
+        endISO = startISO ? addDaysISO(startISO, nights) : "";
         if (!endISO || !isRangeClearFor(cabinId, startISO, nights)) {
           const span = findFirstSpan(cabinId, MIN_ISO, nights);
-          startISO = span.startISO; endISO = span.endISO;
+          startISO = span.startISO;
+          endISO = span.endISO;
         }
       }
 
@@ -296,13 +513,14 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       function renderCalendars() {
         if (!calWrap) return;
         const firstMonth = startOfMonth(focusDate);
-        let html = '';
-        for (let i=0; i<MONTHS; i++) html += renderMonth(addMonths(firstMonth, i));
+        let html = "";
+        for (let i = 0; i < MONTHS; i++)
+          html += renderMonth(addMonths(firstMonth, i));
         calWrap.innerHTML = html;
-        calWrap.querySelectorAll('[data-day]')?.forEach((el) => {
-          el.addEventListener('click', () => {
-            const iso = el.getAttribute('data-day') || '';
-            const disabled = el.getAttribute('data-disabled') === 'true';
+        calWrap.querySelectorAll("[data-day]")?.forEach((el) => {
+          el.addEventListener("click", () => {
+            const iso = el.getAttribute("data-day") || "";
+            const disabled = el.getAttribute("data-disabled") === "true";
             if (!iso) return;
             onDayClick(iso, disabled);
           });
@@ -311,111 +529,158 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       }
 
       function renderMonth(base) {
-        const y = base.getFullYear(); const m = base.getMonth();
-        const monthName = (DICT.months || [])[m] || `${m+1}`;
+        const y = base.getFullYear();
+        const m = base.getMonth();
+        const monthName = (DICT.months || [])[m] || `${m + 1}`;
         const dim = daysInMonth(base);
         const first = startOfMonth(base);
         const pad = dowMondayFirst(first) - 1;
-        const cells = [];
-        for (let i=0;i<pad;i++) cells.push({ iso:'', blank:true });
-        for (let d=1; d<=dim; d++) {
-          const date = new Date(y, m, d); const iso = toISO(date);
-          const canStart = !isPast(iso) && isRangeClearFor(cabinId, iso, nights);
-          cells.push({ iso, blank:false, disabled: !canStart });
-        }
-        while (cells.length % 7) cells.push({ iso:'', blank:true });
 
-        const head = (DICT.weekdays || []).map(w => `<div class="text-xs text-gray-500 text-center">${w}</div>`).join('');
-        const grid = cells.map(c => {
-          if (c.blank) return `<button class='h-9'></button>`;
-          const d = Number(c.iso.slice(8,10));
-          const dis = c.disabled ? 'true' : 'false';
-          const baseCls = 'h-9 rounded-md border text-sm flex items-center justify-center select-none';
-          const disCls = c.disabled ? ' bg-gray-200 text-gray-400 cursor-not-allowed' : ' hover:bg-gray-50';
-          return `<button data-day='${c.iso}' data-disabled='${dis}' class='${baseCls + disCls}' aria-label='${c.iso}'>${d}</button>`;
-        }).join('');
+        const cells = [];
+        for (let i = 0; i < pad; i++) cells.push({ iso: "", blank: true });
+        for (let d = 1; d <= dim; d++) {
+          const date = new Date(y, m, d);
+          const iso = toISO(date);
+          const canStart =
+            !isPast(iso) && isRangeClearFor(cabinId, iso, nights);
+          cells.push({ iso, blank: false, disabled: !canStart });
+        }
+        while (cells.length % 7) cells.push({ iso: "", blank: true });
+
+        const head = (DICT.weekdays || [])
+          .map(
+            (w) =>
+              `<div class="text-[11px] md:text-xs text-gray-500 text-center font-medium tracking-wide">${w}</div>`
+          )
+          .join("");
+
+        const grid = cells
+          .map((c) => {
+            if (c.blank) return `<div class='h-8 md:h-9'></div>`;
+            const d = Number(c.iso.slice(8, 10));
+            const dis = c.disabled ? "true" : "false";
+            // Botón circular, sin borde. Disabled: gris claro; normal: gris medio; hover: fondo suave
+            const baseCls =
+              "h-8 w-8 md:h-9 md:w-9 rounded-full text-sm flex items-center justify-center select-none";
+            const disCls = c.disabled
+              ? " text-gray-300 cursor-not-allowed"
+              : " text-gray-700 hover:bg-gray-100";
+            return `<button data-day='${c.iso}' data-disabled='${dis}'
+              class='${baseCls + disCls}' aria-label='${c.iso}'>${d}</button>`;
+          })
+          .join("");
 
         return `
-          <div class="rounded-xl border p-3">
-            <div class="mb-2 flex items-center justify-between">
-              <div class="font-medium">${monthName} ${y}</div>
-              <div class="flex gap-1">
-                <button type="button" data-prev-month class="rounded-full border p-1 text-xs hover:bg-gray-50" aria-label="Mes anterior">◀</button>
-                <button type="button" data-next-month class="rounded-full border p-1 text-xs hover:bg-gray-50" aria-label="Mes siguiente">▶</button>
-              </div>
-            </div>
-            <div class="grid grid-cols-7 gap-1 mb-1">${head}</div>
-            <div class="grid grid-cols-7 gap-1">${grid}</div>
-          </div>`;
+    <div class="rounded-2xl p-2 md:p-3">
+      <div class="mb-2 flex items-center justify-between">
+        <div class="text-gray-700 font-medium">${monthName} ${y}</div>
+        <div class="flex gap-1">
+          <button type="button" data-prev-month class="cal-nav-btn" aria-label="Mes anterior">◀</button>
+          <button type="button" data-next-month class="cal-nav-btn" aria-label="Mes siguiente">▶</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-7 gap-1 mb-1">${head}</div>
+      <div class="grid grid-cols-7 gap-1">${grid}</div>
+    </div>`;
       }
 
       function onDayClick(iso, disabled) {
         if (disabled) return;
-        if (!cabinId) { hintEl.textContent = DICT.hints?.selectCabin || 'Seleccioná una cabaña.'; return; }
-        hintEl.textContent = '';
+        if (!cabinId) {
+          hintEl.textContent =
+            DICT.hints?.selectCabin || "Seleccioná una cabaña.";
+          return;
+        }
+        hintEl.textContent = "";
         startISO = iso;
         endISO = addDaysISO(startISO, nights);
         if (!isRangeClearFor(cabinId, startISO, nights)) {
           const span = findFirstSpan(cabinId, startISO, nights);
-          startISO = span.startISO; endISO = span.endISO;
-          if (!startISO) { hintEl.textContent = DICT.hints?.invalidRange || 'Rango inválido.'; }
+          startISO = span.startISO;
+          endISO = span.endISO;
+          if (!startISO) {
+            hintEl.textContent = DICT.hints?.invalidRange || "Rango inválido.";
+          }
         }
         renderSummary();
         paintSelection();
       }
 
       function paintSelection() {
-        const btns = calWrap.querySelectorAll('[data-day]');
-        btns.forEach(btn => {
-          const iso = btn.getAttribute('data-day');
-          btn.classList.remove('bg-gray-900','text-white');
-          if (startISO && endISO) {
-            if (inRange(iso, startISO, endISO)) btn.classList.add('bg-gray-900','text-white');
-          } else if (startISO && iso === startISO) {
-            btn.classList.add('bg-gray-900','text-white');
-          }
+        const btns = calWrap.querySelectorAll("[data-day]");
+        btns.forEach((btn) => {
+          btn.classList.remove("sel"); // limpiador simple
+          const iso = btn.getAttribute("data-day");
+          if (startISO && endISO && inRange(iso, startISO, endISO))
+            btn.classList.add("sel");
+          else if (startISO && iso === startISO) btn.classList.add("sel");
         });
       }
+
       function inRange(xISO, aISO, bISO) {
-        if (!xISO) return false; const x = parseISO(xISO); const a = parseISO(aISO); const b = parseISO(bISO); if (!x||!a||!b) return false; const s = a <= b ? a : b; const e = a <= b ? b : a; return x >= s && x <= e;
+        if (!xISO) return false;
+        const x = parseISO(xISO);
+        const a = parseISO(aISO);
+        const b = parseISO(bISO);
+        if (!x || !a || !b) return false;
+        const s = a <= b ? a : b;
+        const e = a <= b ? b : a;
+        return x >= s && x <= e;
       }
 
       function bindMonthNav() {
-        calWrap.addEventListener('click', (e) => {
-          const t = e.target; if (!(t instanceof Element)) return;
-          if (t.hasAttribute('data-prev-month')) { focusDate = addMonths(startOfMonth(focusDate), -1); renderCalendars(); }
-          if (t.hasAttribute('data-next-month')) { focusDate = addMonths(startOfMonth(focusDate), +1); renderCalendars(); }
+        calWrap.addEventListener("click", (e) => {
+          const t = e.target;
+          if (!(t instanceof Element)) return;
+          if (t.hasAttribute("data-prev-month")) {
+            focusDate = addMonths(startOfMonth(focusDate), -1);
+            renderCalendars();
+          }
+          if (t.hasAttribute("data-next-month")) {
+            focusDate = addMonths(startOfMonth(focusDate), +1);
+            renderCalendars();
+          }
         });
       }
 
       function renderSummary() {
         if (startISO && endISO) {
           const nightsNum = nightsCount(startISO, endISO);
-          summaryEl.textContent = `${formatHuman(startISO)} → ${formatHuman(endISO)} • ${nightsNum} noche${nightsNum!==1?'s':''}`;
+          summaryEl.textContent = `${formatHuman(startISO)} → ${formatHuman(endISO)} • ${nightsNum} noche${nightsNum !== 1 ? "s" : ""}`;
         } else if (startISO) {
           summaryEl.textContent = `${formatHuman(startISO)} —`;
         } else {
-          summaryEl.textContent = '';
+          summaryEl.textContent = "";
         }
         if (currentCabinEl) {
-          const cab = CABINS.find(c => c.id === cabinId);
-          currentCabinEl.textContent = cab ? (cab.name || `Cabaña ${cab.id}`) : '';
+          const cab = CABINS.find((c) => c.id === cabinId);
+          currentCabinEl.textContent = cab
+            ? cab.name || `Cabaña ${cab.id}`
+            : "";
         }
         updateSubmitState();
       }
       function formatHuman(iso) {
-        const d = parseISO(iso); if (!d) return iso;
-        const m = (DICT.months || [])[d.getMonth()] || String(d.getMonth()+1);
-        return `${String(d.getDate()).padStart(2,'0')} ${m} ${d.getFullYear()}`;
+        const d = parseISO(iso);
+        if (!d) return iso;
+        const m = (DICT.months || [])[d.getMonth()] || String(d.getMonth() + 1);
+        return `${String(d.getDate()).padStart(2, "0")} ${m} ${d.getFullYear()}`;
       }
 
       function updateSubmitState() {
         const okFields = !!(fName?.value && fPhone?.value && fMail?.value);
         const okDates = !!(startISO && endISO);
-        if (okFields && okDates) submitBtn?.removeAttribute('disabled'); else submitBtn?.setAttribute('disabled','true');
+        if (okFields && okDates) submitBtn?.removeAttribute("disabled");
+        else submitBtn?.setAttribute("disabled", "true");
       }
 
-      function renderAll() { if (!startISO || !endISO) recomputeFromStart(true); renderCalendars(); renderSummary(); hintEl.textContent = ''; bindMonthNav(); }
+      function renderAll() {
+        if (!startISO || !endISO) recomputeFromStart(true);
+        renderCalendars();
+        renderSummary();
+        hintEl.textContent = "";
+        bindMonthNav();
+      }
 
       // Init
       recomputeFromStart(true);
@@ -425,5 +690,25 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
 </section>
 
 <style is:global>
-  [data-calendars] [data-day] { transition: background-color .12s ease, color .12s ease; }
+/* Transiciones suaves */
+[data-calendars] [data-day] { transition: background-color .12s ease, color .12s ease, box-shadow .12s ease; }
+
+/* Botones de navegación del mes, minimal */
+.cal-nav-btn{
+  @apply rounded-full border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50;
+}
+
+/* Estado seleccionado: burbuja negra, como en la imagen */
+[data-calendars] [data-day].sel{
+  @apply bg-gray-900 text-white;
+}
+
+/* Días que no pueden iniciar (tu lógica ya los marca con data-disabled=true) */
+[data-calendars] [data-day][data-disabled="true"]{
+  @apply text-gray-300;
+}
+
+/* Quita bordes duros heredados en contenedores y deja look aireado */
+[data-comp="booking"] .rounded-2xl.border { border-color: #e5e7eb; } /* gris suave */
+
 </style>
