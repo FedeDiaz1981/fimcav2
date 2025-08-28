@@ -1,0 +1,1 @@
+declare module '*.astro' { const C: any; export default C; }

@@ -1,0 +1,83 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDict, type Locale } from "../../i18n/config";
+import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+
+const { lang } = Astro.params as { lang: Locale };
+const t = getDict(lang);
+
+import HeroCarousel from "../../components/HeroCarousel.astro";
+
+import MapaTuristico from "../../components/MapaTuristico.astro";
+const imgs = [
+  {
+    src: "https://l.icdbcdn.com/oh/c1fa0d9b-6f22-44c1-b258-01338738eac5.jpg?w=2080",
+    alt: "Living con estufa",
+  },
+  {
+    src: "https://l.icdbcdn.com/oh/c1fa0d9b-6f22-44c1-b258-01338738eac5.jpg?w=2080",
+    alt: "Living con estufa",
+  },
+];
+---
+
+<Base lang={lang} title={t.header.title}>
+  <main class="container mx-auto p-6">
+    <HeroCarousel images={imgs} locale="en" autoplay intervalMs={5000} />
+
+    <section class="mt-12 px-4 mb-12 pb-12">
+      <div class="max-w-3xl mx-auto text-center">
+        <h3
+          class="text-xs font-semibold uppercase tracking-widest text-stone-500"
+        >
+          Bienvenido a
+        </h3>
+
+        <h1 class="mt-2 text-4xl md:text-5xl font-semibold text-stone-900">
+          Finca Casiana
+        </h1>
+
+        <div
+          class="mt-6 space-y-4 text-base md:text-lg leading-relaxed text-stone-600"
+        >
+          <p>
+            Somos una finca familiar ubicada en el portal de acceso este a la
+            ciudad de San Juan. Un espacio pensado para el descanso, la conexión
+            con la naturaleza y la creación de momentos inolvidables.
+          </p>
+          <p>
+            Nuestro entorno natural, la atención personalizada y las
+            instalaciones equipadas hacen de Finca Casiana el lugar ideal para
+            familias, parejas y grupos que buscan desconectarse del ruido y
+            reconectar con lo esencial.
+          </p>
+          <p>
+            Buscamos brindar un espacio de encuentro con la naturaleza donde
+            cada visitante pueda disfrutar de una experiencia auténtica, segura
+            y confortable. Nos enfocamos en el turismo slow, la hospitalidad y
+            el cuidado por cada detalle.
+          </p>
+        </div>
+
+        <div class="mt-10">
+          <h3 class="text-xl font-semibold text-stone-900">Visión</h3>
+          <div
+            class="mx-auto mt-2 h-1 w-16 rounded-full"
+            style="background:#C76B4E;"
+          >
+          </div>
+          <p class="mt-4 text-base md:text-lg leading-relaxed text-stone-600">
+            Posicionarnos como un destino destacado en San Juan para quienes
+            buscan tranquilidad, naturaleza y calidad en el servicio. Aspiramos
+            a ser una referencia en turismo rural y eventos especiales en la
+            región.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <MapaTuristico
+      fijo={{ lat: -31.555666223254082, lng: -68.48057388609342 }}
+    />
+  </main>
+</Base>

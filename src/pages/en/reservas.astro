@@ -1,0 +1,79 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDict, type Locale } from "../../i18n/config";
+import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+import ReservaCabanas from "../../components/ReservaCabanas.astro"
+
+const { lang } = Astro.params as { lang: Locale };
+const t = getDict(lang);
+
+const reservas = {
+  "1": [
+    "2025-09-04",
+    "2025-09-05",
+    "2025-09-12",
+    "2025-09-14",
+    "2025-09-15",
+    "2025-09-18",
+    "2025-09-29",
+    "2025-10-02",
+    "2025-10-06",
+    "2025-10-25",
+    "2025-11-09",
+    "2025-11-15",
+    "2025-11-26",
+    "2025-12-04",
+    "2025-12-18"
+  ],
+  "2": [
+    "2025-09-06",
+    "2025-09-09",
+    "2025-09-21",
+    "2025-10-07",
+    "2025-10-08",
+    "2025-10-12",
+    "2025-10-22",
+    "2025-11-01",
+    "2025-11-08",
+    "2025-11-14",
+    "2025-11-19",
+    "2025-12-05",
+    "2025-12-19",
+    "2025-12-22",
+    "2025-12-30"
+  ],
+  "3": [
+    "2025-09-02",
+    "2025-09-10",
+    "2025-09-19",
+    "2025-09-22",
+    "2025-09-24",
+    "2025-10-06",
+    "2025-10-14",
+    "2025-10-24",
+    "2025-10-25",
+    "2025-10-28",
+    "2025-11-09",
+    "2025-11-15",
+    "2025-11-29",
+    "2025-12-07",
+    "2025-12-13",
+    "2025-12-21"
+  ]
+};
+
+const cabs = [{ id: '1' }, { id: '2' }, { id: '3' }];
+---
+
+<Base lang={lang} title={t.header.title}>
+ 
+  <main class="container mx-auto p-6">
+    
+    <ReservaCabanas
+  cabins={cabs}
+  unavailable={reservas}
+  months={3}
+  defaultNights={2}
+/>
+  </main>
+</Base>

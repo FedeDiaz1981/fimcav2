@@ -1,0 +1,137 @@
+---
+import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import logo from "../../public/Logo-03.png";
+
+import { locales, defaultLocale, type Locale, getDict } from '../i18n/config';
+
+type Props = { lang?: Locale };
+const { lang } = Astro.props as Props;
+
+// 1) Determinar locale (prop > URL > default)
+const seg1 = Astro.url.pathname.split('/')[1] as Locale;
+const locale: Locale =
+  (lang && (locales as readonly string[]).includes(lang) ? lang :
+   ((locales as readonly string[]).includes(seg1) ? seg1 : defaultLocale));
+
+// 2) Diccionario
+const t = getDict(locale);
+
+// 3) Rutas (si querés slugs por idioma, después mapeamos)
+const path = Astro.url.pathname;
+const currency = 'ARS';
+const homeHref     = `/${locale}/`;
+const cabanasHref  = `/${locale}/cabañas`;
+const salonHref    = `/${locale}/salon`;
+const reservasHref = `/${locale}/reservas`;
+
+// 4) Labels del menú (i18n con fallback)
+const LABELS = {
+  home: t.nav?.home ?? (locale === 'es' ? 'Inicio' : 'Home'),
+  cabins: (t as any)?.nav?.cabins ?? (locale === 'es' ? 'Cabañas' : 'Cabins'),
+  hall: (t as any)?.nav?.hall ?? (locale === 'es' ? 'Salón' : 'Hall'),
+  bookings: (t as any)?.nav?.bookings ?? (locale === 'es' ? 'Reservas' : 'Bookings'),
+};
+
+// 5) Active helper
+const isActive = (href: string) => {
+  const n = (s: string) => s.replace(/\/+$/, '');
+  return n(Astro.url.pathname) === n(href) ? 'active' : '';
+};
+---
+
+<header class="site-header" id="siteHeader">
+  <div class="site-header__inner">
+    <!-- Logo -->
+    <a class="logo" href={homeHref}>
+      <img src={logo.src} alt="Logo" />
+    </a>
+
+    <!-- Nav desktop -->
+    <nav class="nav" aria-label="Main">
+      <ul>
+        <li><a class={isActive(homeHref)}     href={homeHref}>{LABELS.home}</a></li>
+        <li><a class={isActive(cabanasHref)}  href={cabanasHref}>{LABELS.cabins}</a></li>
+        <!-- <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li> -->
+        <li><a class={isActive(reservasHref)} href={reservasHref}>{LABELS.bookings}</a></li>
+      </ul>
+    </nav>
+
+    <!-- Derecha: idioma / moneda -->
+    <div class="actions">
+      <!-- <LanguageSwitcher locale={locale} path={path} /> -->
+      <button class="pill hidden" type="button" data-currency
+        aria-label={t.ui?.changeCurrency ?? (locale === 'es' ? 'Cambiar moneda' : 'Change Currency')}>
+        {currency}
+      </button>
+    </div>
+
+    <!-- Mobile hamburger -->
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </button>
+  </div>
+
+  <!-- Menú mobile -->
+  <div class="mobile" id="mobileMenu">
+    <nav aria-label="Mobile">
+      <ul>
+        <li><a class={isActive(homeHref)}     href={homeHref}>{LABELS.home}</a></li>
+        <li><a class={isActive(cabanasHref)}  href={cabanasHref}>{LABELS.cabins}</a></li>
+        <!-- <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li> -->
+        <li><a class={isActive(reservasHref)} href={reservasHref}>{LABELS.bookings}</a></li>
+
+        <!-- No duplico LanguageSwitcher para evitar que aparezca bajo el header -->
+        <li style="display:none !important; padding:12px 4px; display:flex; gap:12px">
+          <button class="pill hidden" type="button" data-currency>{currency}</button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+.site-header{position:sticky;top:0;background:#fff;border-bottom:1px solid rgba(0,0,0,.06);z-index:50}
+.site-header__inner{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px}
+.logo img{height:42px}
+.nav{display:flex;flex:1;justify-content:center}
+.nav ul{display:flex;gap:40px;list-style:none;margin:0;padding:0}
+.nav a{background:none;border:0;cursor:pointer;text-decoration:none;color:#8a4e3a;padding:6px 0}
+.nav a.active,.nav a:hover{color:#C76B4E;box-shadow:inset 0 -2px 0 0 #C76B4E}
+.actions{display:flex;gap:12px}
+.pill{border:0;background:transparent;cursor:pointer;padding:6px 10px;border-radius:999px;color:#C76B4E}
+.pill:hover{background:rgba(0,0,0,.04)}
+.hamburger{display:none;border:0;background:transparent;cursor:pointer;width:36px;height:36px;padding:6px}
+.hamburger .bar{display:block;height:2px;background:#C76B4E;margin:6px 0}
+@media (max-width:1024px){
+  .nav,.actions{display:none}
+  .hamburger{display:block}
+  .site-header__inner{padding:12px 16px}
+  .logo img{height:34px}
+  .site-header.is-open .mobile{display:block}
+}
+.mobile{display:none;position:fixed;inset:64px 0 0 0;background:#fff;padding:16px;border-top:1px solid rgba(0,0,0,.06)}
+.mobile nav ul{list-style:none;margin:0;padding:0}
+.mobile nav li{border-bottom:1px solid rgba(0,0,0,.06)}
+.mobile nav a,.mobile nav button{display:flex;justify-content:space-between;align-items:center;width:100%;padding:14px 4px;background:none;border:0}
+</style>
+
+<script>
+const header = document.getElementById('siteHeader');
+const burger  = document.getElementById('hamburger');
+burger?.addEventListener('click', () => {
+  //@ts-ignore
+  const open = header.classList.toggle('is-open');
+  burger.setAttribute('aria-expanded', String(open));
+});
+
+// moneda simple en localStorage
+const curBtns = document.querySelectorAll('[data-currency]');
+curBtns.forEach(b=>{
+  b.textContent = localStorage.getItem('currency') || b.textContent || 'ARS';
+  b.addEventListener('click',()=>{
+    const next = b.textContent === 'ARS' ? 'USD' : 'ARS';
+    localStorage.setItem('currency', next);
+    document.querySelectorAll('[data-currency]').forEach(x=>x.textContent = next);
+  });
+});
+</script>

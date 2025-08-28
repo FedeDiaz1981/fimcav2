@@ -1,0 +1,28 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { defaultLocale, locales, type Locale } from '../i18n/config';
+
+const guessed = (Astro.params?.lang ?? Astro.url.pathname.split('/')[1]) as Locale;
+const locale: Locale = (locales as readonly string[]).includes(guessed) ? guessed : defaultLocale;
+
+const { title } = Astro.props as { title?: string };
+---
+<html lang={locale} class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title ?? "Finca Casiana"}</title>
+    <link rel="stylesheet" href="/src/styles/global.css" />
+  </head>
+  <body class="min-h-full bg-gray-50 text-gray-900">
+    <!-- ⬇️ pasamos SIEMPRE el idioma -->
+    <Header lang={locale} />
+    <slot />
+    <Footer
+      lang={locale}
+      instagramHandle="@fincacasiana"
+      phoneHref="https://wa.me/549264XXXXXXX"
+    />
+  </body>
+</html>

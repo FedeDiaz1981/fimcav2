@@ -1,0 +1,15 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDict, type Locale } from "../../i18n/config";
+import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+
+const { lang } = Astro.params as { lang: Locale };
+const t = getDict(lang);
+
+---
+
+<Base lang={lang} title={t.header.title}>
+  <main class="container mx-auto p-6">
+    
+  </main>
+</Base>

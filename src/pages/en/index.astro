@@ -1,0 +1,80 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDict, type Locale } from "../../i18n/config";
+import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+
+const { lang } = Astro.params as { lang: Locale };
+const t = getDict(lang);
+
+import HeroCarousel from "../../components/HeroCarousel.astro";
+
+import MapaTuristico from "../../components/MapaTuristico.astro";
+const imgs = [
+  {
+    src: "https://l.icdbcdn.com/oh/c1fa0d9b-6f22-44c1-b258-01338738eac5.jpg?w=2080",
+    alt: "Living con estufa",
+  },
+  {
+    src: "https://l.icdbcdn.com/oh/c1fa0d9b-6f22-44c1-b258-01338738eac5.jpg?w=2080",
+    alt: "Living con estufa",
+  },
+];
+---
+
+<Base lang={lang} title={t.header.title}>
+  <main class="container mx-auto p-6">
+    <HeroCarousel images={imgs} locale="en" autoplay intervalMs={5000} />
+
+    <section class="mt-12 mb-12 px-4">
+      <div class="max-w-3xl mx-auto text-center">
+        <h3
+          class="text-xs font-semibold uppercase tracking-widest text-stone-500"
+        >
+          Welcome to
+        </h3>
+
+        <h1 class="mt-2 text-4xl md:text-5xl font-semibold text-stone-900">
+          Finca Casiana
+        </h1>
+
+        <div
+          class="mt-6 space-y-4 text-base md:text-lg leading-relaxed text-stone-600"
+        >
+          <p>
+            We are a family-run estate located at the eastern gateway to the
+            city of San Juan. A place designed for rest, a connection with
+            nature, and the creation of unforgettable moments.
+          </p>
+          <p>
+            Our natural setting, personalized attention, and well-equipped
+            facilities make Finca Casiana the ideal place for families, couples,
+            and groups who want to unplug from the noise and reconnect with what
+            truly matters.
+          </p>
+          <p>
+            We aim to offer a space to meet nature where every visitor can enjoy
+            an authentic, safe, and comfortable experience. We focus on slow
+            tourism, hospitality, and care for every detail.
+          </p>
+        </div>
+
+        <div class="mt-10">
+          <h3 class="text-xl font-semibold text-stone-900">Vision</h3>
+          <div
+            class="mx-auto mt-2 h-1 w-16 rounded-full"
+            style="background:#C76B4E;"
+          >
+          </div>
+          <p class="mt-4 text-base md:text-lg leading-relaxed text-stone-600">
+            To position ourselves as a leading destination in San Juan for those
+            seeking tranquility, nature, and quality service. We aspire to be a
+            regional benchmark in rural tourism and special events.
+          </p>
+        </div>
+      </div>
+    </section>
+    <MapaTuristico
+      fijo={{ lat: -31.555666223254082, lng: -68.48057388609342 }}
+    />
+  </main>
+</Base>

@@ -1,0 +1,383 @@
+---
+type Img = { src: string; alt?: string; width?: number; height?: number };
+type Labels = {
+  checkin: string;
+  checkout: string;
+  guests: string;
+  search: string;
+};
+
+type Props = {
+  images?: Img[];
+  locale?: string;
+  searchPath?: string;
+  labels?: Labels;
+  brandColor?: string;
+  autoplay?: boolean;
+  intervalMs?: number;
+  preloadFirstImage?: boolean;
+  showSearch?: boolean;
+};
+
+const {
+  images = [],
+  locale = "en",
+  searchPath = `/${locale}/all-properties/`,
+  labels = {
+    checkin: "Check-in",
+    checkout: "Check-out",
+    guests: "Guests",
+    search: "Search",
+  },
+  brandColor = "#C76B4E",
+  autoplay = true,
+  intervalMs = 6000,
+  preloadFirstImage = true,
+  showSearch = false,
+} = Astro.props as Props;
+
+const FALLBACK: Img[] = [
+  {
+    src: "https://fincacasiana.com/wp-content/uploads/2025/03/cabana-1-de-finca-casiana--scaled.jpg.webp",
+  },
+  {
+    src: "https://fincacasiana.com/wp-content/uploads/2025/03/pileta-finca-casiana-scaled.jpg.webp",
+  },
+  {
+    src: "https://fincacasiana.com/wp-content/uploads/2025/03/parque-verde-finca-casiana-scaled.jpg.webp",
+  },
+  {
+    src: "https://fincacasiana.com/wp-content/uploads/2025/03/dormitorio-mesa-de-luz-cabana-5-finca-casiana-scaled.jpg.webp",
+  },
+  {
+    src: "https://fincacasiana.com/wp-content/uploads/2025/03/mates-pileta-finca-casiana-scaled.jpg.webp",
+  },
+  {
+    src: "https://fincacasiana.com/wp-content/uploads/2025/03/Canchas-futbol-finca-casiana-scaled.jpg.webp",
+  },
+];
+const imgs = images.length ? images : FALLBACK;
+
+const id =
+  (globalThis as any).crypto?.randomUUID?.() ??
+  `hero-${Math.random().toString(36).slice(2)}`;
+
+const defaultSearchUrl = `${searchPath}?adults=1&children=0&infants=0&pets=0`;
+---
+
+{
+  preloadFirstImage && imgs?.[0]?.src && (
+    <link rel="preload" as="image" href={imgs[0].src} />
+  )
+}
+
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
+
+<section
+  class="hero"
+  style={`--brand:${brandColor}`}
+  data-hero={id}
+  aria-label="Hero"
+  itemscope
+  itemtype="https://schema.org/ImageGallery"
+>
+  <div
+    class="rail"
+    role="region"
+    aria-roledescription="carousel"
+    style="overflow:hidden; border-radius:10px;"
+  >
+    <!-- SIN FLECHAS -->
+    <div class="slides" aria-live="polite" tabindex="0">
+      {
+        imgs.map((img, i) => (
+          <figure
+            class={`slide aos-init ${i === 0 ? "active aos-animate" : ""}`}
+            aria-hidden={i !== 0}
+            itemprop="associatedMedia"
+            data-aos="fade"
+            data-aos-duration="800"
+            data-aos-easing="ease-out"
+          >
+            <img
+              src={img.src}
+              alt={img.alt ?? ""}
+              width={img.width ?? undefined}
+              height={img.height ?? undefined}
+              loading={i === 0 ? "eager" : "lazy"}
+              decoding="async"
+              fetchpriority={i === 0 ? "high" : "auto"}
+            />
+          </figure>
+        ))
+      }
+    </div>
+  </div>
+
+  {
+    showSearch && (
+      <div class="search-wrap">
+        <form class="searchbar" data-form>
+          <label class="field">
+            <span>{labels.checkin}</span>
+            <input type="date" name="start" inputmode="none" />
+          </label>
+          <label class="field">
+            <span>{labels.checkout}</span>
+            <input type="date" name="end" inputmode="none" />
+          </label>
+          <label class="field">
+            <span>{labels.guests}</span>
+            <select name="adults" aria-label={labels.guests}>
+              <option value="1">1 adult</option>
+              <option value="2">2 adults</option>
+              <option value="3">3 adults</option>
+              <option value="4">4 adults</option>
+              <option value="5">5 adults</option>
+              <option value="6">6 adults</option>
+            </select>
+          </label>
+          <a class="cta" href={defaultSearchUrl} data-search>
+            {labels.search}
+            <span class="cta-arrow" aria-hidden="true">
+              ›
+            </span>
+          </a>
+        </form>
+        <a class="cta mobile" href={defaultSearchUrl} data-search>
+          {labels.search}
+        </a>
+      </div>
+    )
+  }
+</section>
+
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>
+<script is:inline>
+  const root = document.querySelector(`[data-hero="${{ id }}"]`);
+  const slides = root ? Array.from(root.querySelectorAll(".slide")) : [];
+  let i = 0,
+    N = slides.length;
+
+  function restartKenBurns(slide) {
+    const img = slide.querySelector("img");
+    if (!img) return;
+    img.style.animation = "none";
+    void img.offsetWidth; // reflow
+    img.style.animation = "";
+  }
+
+  function setActive(next) {
+    if (!N) return;
+    slides[i]?.classList.remove("active", "aos-animate");
+    i = (next + N) % N;
+    const s = slides[i];
+    s.classList.add("active");
+    setTimeout(() => s.classList.add("aos-animate"), 20);
+    restartKenBurns(s);
+  }
+  function next() {
+    setActive(i + 1);
+  }
+
+  // ⬇️ renombrados para no chocar con los del frontmatter
+  const AUTO_PLAY = JSON.parse("{JSON.stringify(autoplay)}");
+  const AUTO_INTERVAL_MS = { intervalMs };
+  let timer = null;
+  if (AUTO_PLAY && N > 1) {
+    timer = setInterval(next, AUTO_INTERVAL_MS);
+    root?.addEventListener("mouseenter", () => {
+      clearInterval(timer);
+      timer = null;
+    });
+    root?.addEventListener("mouseleave", () => {
+      if (!timer) timer = setInterval(next, AUTO_INTERVAL_MS);
+    });
+  }
+
+  // teclado opcional
+  root?.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") next();
+  });
+
+  // init AOS
+  window.addEventListener("load", () => {
+    if (window.AOS)
+      window.AOS.init({ duration: 800, easing: "ease-out", once: false });
+  });
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #000;
+
+    /* Más compacto para eliminar blanco abajo */
+    height: clamp(220px, 38vw, 420px);
+    min-height: 220px;
+    max-height: 420px;
+    margin: 0; /* por si tu tema da margen a <section> */
+  }
+
+  /* contenedor */
+  .rail {
+    height: 100%;
+    position: relative;
+  }
+
+  /* Slides superpuestos con fade (AOS) + Ken Burns */
+  .slides {
+    position: relative;
+    height: 100%;
+  }
+  .slide {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    will-change: opacity;
+  }
+  .slide.active {
+    opacity: 1;
+    z-index: 2;
+  }
+  .slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transform-origin: var(--ox, 50%) var(--oy, 50%);
+    animation: kenIn var(--ken, 8000ms) ease-out forwards;
+  }
+
+  /* Paneo sutil */
+  .slide:nth-child(1) {
+    --ox: 20%;
+    --oy: 20%;
+  }
+  .slide:nth-child(2) {
+    --ox: 80%;
+    --oy: 20%;
+  }
+  .slide:nth-child(3) {
+    --ox: 50%;
+    --oy: 50%;
+  }
+  .slide:nth-child(4) {
+    --ox: 20%;
+    --oy: 80%;
+  }
+  .slide:nth-child(5) {
+    --ox: 80%;
+    --oy: 80%;
+  }
+  .slide:nth-child(6) {
+    --ox: 50%;
+    --oy: 30%;
+  }
+
+  @keyframes kenIn {
+    from {
+      transform: scale(1.08);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+
+  /* AOS sólo maneja opacidad (sin translate) */
+  .slide[data-aos].aos-init {
+    opacity: 0;
+    transform: none;
+  }
+  .slide[data-aos].aos-animate {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Buscador (si lo activás) */
+  .search-wrap {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: end center;
+    padding: 0 16px 16px; /* menos padding abajo */
+  }
+  .searchbar {
+    pointer-events: auto;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow:
+      0 16px 30px rgba(0, 0, 0, 0.18),
+      0 4px 10px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+  }
+  .searchbar .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 18px;
+    min-width: 220px;
+  }
+  .searchbar .field + .field {
+    border-left: 1px solid #ece8e6;
+  }
+  .field span {
+    font-size: 12px;
+    color: #7a6e66;
+  }
+  .field input,
+  .field select {
+    border: 1px solid #e6e2df;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font: inherit;
+  }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 28px;
+    background: var(--brand);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    min-width: 210px;
+  }
+  .cta:hover {
+    filter: brightness(0.97);
+  }
+  .cta-arrow {
+    margin-left: 10px;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .cta.mobile {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .hero {
+      height: clamp(200px, 52vw, 360px);
+    }
+    .searchbar {
+      display: none;
+    }
+    .cta.mobile {
+      display: inline-flex;
+      background: var(--brand);
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 12px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+    }
+  }
+</style>

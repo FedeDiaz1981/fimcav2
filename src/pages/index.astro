@@ -1,0 +1,23 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+import type { Locale } from '../i18n/config';
+
+export async function getDictionary(locale: Locale) {
+  switch (locale) {
+    case 'es': return (await import('../i18n/dictionaries/es')).default;
+    case 'en':
+    default:    return (await import('../i18n/dictionaries/en.ts')).default;
+  }
+}
+
+import HeroCarousel from '../components/HeroCarousel.astro';
+const imgs = [
+  { src: 'https://l.icdbcdn.com/oh/c1fa0d9b-6f22-44c1-b258-01338738eac5.jpg?w=2080', alt: 'Living con estufa' },
+  // ...
+];
+
+---
+<Layout title="Finca Casiana">
+  <HeroCarousel images={imgs} locale="en" autoplay intervalMs={5000} />
+</Layout>

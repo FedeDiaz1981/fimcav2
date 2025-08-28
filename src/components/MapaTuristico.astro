@@ -1,0 +1,382 @@
+---
+/** MapaTuristicoLeaflet.astro
+ * - Sin API key (Leaflet + OpenStreetMap).
+ * - Botonera: activa/desactiva lugares.
+ * - Distancia/tiempo por ruta (OSRM). Seteá useRouting=false para Haversine.
+ */
+
+type LatLng = { lat: number; lng: number };
+type Place = {
+  id: string;
+  name: string;
+  query?: string;
+  lat?: number;
+  lng?: number;
+};
+
+type Props = {
+  brandColor?: string;
+  alto?: number;
+  useRouting?: boolean; // true = OSRM (ruta). false = Haversine.
+  fijo?: string | LatLng; // dirección o coordenadas
+  lugares?: Place[];
+};
+
+const {
+  brandColor = "#C76B4E",
+  alto = 480,
+  useRouting = true,
+  fijo = "Martin Güemes 4178 este, Rawson, San Juan, Argentina",
+ lugares = [
+  {
+    id: "micro",
+    name: "Microcentro de la Ciudad de San Juan",
+    query: "Microcentro San Juan, Argentina",
+    lat: -31.536940, lng: -68.525000, // Plaza 25 de Mayo (centro)
+  },
+  {
+    id: "aerop",
+    name: "Aeropuerto Internacional Domingo Faustino Sarmiento",
+    query: "Aeropuerto Domingo Faustino Sarmiento, San Juan",
+    lat: -31.571390, lng: -68.418060,
+  },
+  {
+    id: "terminal",
+    name: "Terminal de ómnibus",
+    query: "Terminal de ómnibus San Juan, Argentina",
+    lat: -31.539318, lng: -68.511205,
+  },
+  {
+    id: "estadio",
+    name: "Estadio San Juan Del Bicentenario",
+    query: "Estadio San Juan del Bicentenario",
+    lat: -31.611946, lng: -68.527479,
+  },
+  {
+    id: "velod",
+    name: "Velódromo Vicente Alejo Chancay",
+    query: "Velódromo Vicente Alejo Chancay, San Juan",
+    lat: -31.609500, lng: -68.523000, // aprox, junto al Bicentenario
+  },
+  {
+    id: "villicum",
+    name: "Autódromo El Villicum",
+    query: "Autódromo El Villicum, San Juan",
+    lat: -31.397140, lng: -68.560790,
+  },
+  {
+    id: "zonda",
+    name: "Autódromo Eduardo Copello “El Zonda”",
+    query: "Autódromo El Zonda, San Juan",
+    lat: -31.553972, lng: -68.694306,
+  },
+  {
+    id: "punta",
+    name: "Dique Punta Negra",
+    query: "Dique Punta Negra, San Juan",
+    lat: -31.504500, lng: -68.784500, // centro de la presa/embalse (aprox)
+  },
+  {
+    id: "ullum",
+    name: "Dique de Ullum",
+    query: "Dique de Ullum, San Juan",
+    lat: -31.474769, lng: -68.649806,
+  },
+  {
+    id: "difunta",
+    name: "Paraje Difunta Correa",
+    query: "Difunta Correa, San Juan",
+    lat: -31.735070, lng: -67.980500, // oratorio
+  },
+  {
+    id: "leoncito",
+    name: "Parque Nacional El Leoncito",
+    query: "Parque Nacional El Leoncito, San Juan",
+    lat: -31.798527, lng: -69.295583, // CASLEO dentro del parque
+  },
+  {
+    id: "ischi",
+    name: "Parque Prov. Ischigualasto (Valle de la Luna)",
+    query: "Parque Provincial Ischigualasto",
+    lat: -30.163044, lng: -67.842792, // coordenada oficial del parque
+  },
+  {
+    id: "agua",
+    name: "Paso de Agua Negra a Chile",
+    query: "Paso de Agua Negra",
+    lat: -30.192222, lng: -69.818333,
+  },
+  {
+    id: "libert",
+    name: "Paso Los Libertadores a Chile",
+    query: "Paso Los Libertadores",
+    lat: -32.827240, lng: -70.092130,
+  },
+],
+} = Astro.props as Props;
+
+const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
+---
+
+<!-- Leaflet CSS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+
+<div class="map-wrap" style={`--alto:${alto}px; --brand:${brandColor}`}>
+  <div id={mapId} class="map"></div>
+</div>
+
+<div class="botonera">
+  {
+    lugares.map((l) => (
+      <button class="chip" data-id={l.id} aria-pressed="false" title={l.name}>
+        {l.name}
+      </button>
+    ))
+  }
+</div>
+
+<script
+  type="module"
+  define:vars={{ mapId, fijo, lugares, brandColor, useRouting }}
+>
+  import * as L from "https://unpkg.com/leaflet@1.9.4/dist/leaflet-src.esm.js";
+
+  // --- tipos para que TS no moleste ---
+  /** @type {import('leaflet').Map} */ let map;
+  /** @type {import('leaflet').Layer} */ let baseMarker;
+  /** @type {{lat:number,lng:number}} */ let base;
+  /** @type {Map<string, import('leaflet').Marker>} */ const markers = new Map();
+  /** @type {Map<string, import('leaflet').Layer>}  */ const layers  = new Map();
+
+  const INITIAL_ZOOM = 12; // zoom por defecto cuando sólo está el punto base
+
+  // ---------------------- Geocoding robusto (Nominatim) ----------------------
+  const norm = (s) =>
+    String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
+  function fromCacheSmart(q) {
+    try {
+      const v = localStorage.getItem("geo:" + norm(q));
+      return v ? JSON.parse(v) : null;
+    } catch { return null; }
+  }
+
+  async function geocodeSmart(q) {
+    try {
+      if (q && typeof q === "object" && "lat" in q && "lng" in q) return q;
+
+      const base = String(q).trim();
+      const withCity = `${base}, Rawson, San Juan, Argentina`;
+      const variants = [
+        base, withCity,
+        base.replace(/Güemes/gi, "Guemes"),
+        withCity.replace(/Güemes/gi, "Guemes"),
+        base.replace(/\beste\b/gi, "Este"),
+        withCity.replace(/\beste\b/gi, "Este"),
+        norm(base), norm(withCity),
+      ];
+
+      for (const cand of [...new Set(variants)]) {
+        const cached = fromCacheSmart(cand);
+        if (cached) return cached;
+
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(cand)}`;
+          const r = await fetch(url, { headers: { "Accept-Language": "es" } });
+          const j = await r.json();
+          if (j?.[0]) {
+            const loc = { lat: Number(j[0].lat), lng: Number(j[0].lon) };
+            try { localStorage.setItem("geo:" + norm(cand), JSON.stringify(loc)); } catch {}
+            return loc;
+          }
+        } catch { /* probar siguiente */ }
+      }
+    } catch { /* ignore */ }
+
+    // Fallback duro (centro SJ)
+    return { lat: -31.5375, lng: -68.521 };
+  }
+
+  // ---------------------- Cálculo de distancias ----------------------
+  function haversine(a, b) {
+    const R = 6371; // km
+    const toRad = (x) => x * Math.PI / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLon = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const sa = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(sa)); // km
+  }
+
+  async function routeOSRM(a, b) {
+    const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("OSRM network");
+    const j = await r.json();
+    if (j.code !== "Ok" || !j.routes?.[0]) throw new Error("OSRM bad");
+    const rt = j.routes[0];
+    return {
+      distanceKm: rt.distance / 1000,
+      durationMin: rt.duration / 60,
+      geojson: rt.geometry,
+    };
+  }
+
+  // ---------------------- Helper: ajustar vista a todos los puntos activos ----------------------
+  function updateView(){
+    if (!map || !base) return;
+
+    const pts = [ L.latLng(base.lat, base.lng) ];
+    markers.forEach(m => { pts.push(m.getLatLng()); });
+
+    if (pts.length === 1) {
+      map.setView(pts[0], INITIAL_ZOOM, { animate: true });
+      return;
+    }
+
+    let bounds = L.latLngBounds(pts);
+    layers.forEach(layer => {
+      if (typeof layer.getBounds === "function") {
+        try { bounds = bounds.extend(layer.getBounds()); } catch {}
+      }
+    });
+
+    const opts = { padding: [60,60], maxZoom: 15, animate: true };
+    if (typeof map.flyToBounds === "function") map.flyToBounds(bounds, opts);
+    else map.fitBounds(bounds, opts);
+  }
+
+  // ---------------------- Init Leaflet ----------------------
+  (async function init() {
+    const cached = typeof fijo === "string" ? fromCacheSmart(fijo) : null;
+    base = cached || (await geocodeSmart(fijo));
+    if (!base || Number.isNaN(base.lat) || Number.isNaN(base.lng)) {
+      base = { lat: -31.5375, lng: -68.521 };
+    }
+
+    map = L.map(mapId, { zoomControl: true, scrollWheelZoom: true })
+            .setView([base.lat, base.lng], INITIAL_ZOOM);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap",
+    }).addTo(map);
+
+    baseMarker = L.circleMarker([base.lat, base.lng], {
+      radius: 8, color: "#fff", weight: 2, fillColor: "#2b2b2b", fillOpacity: 1,
+    }).addTo(map).bindPopup("Punto base");
+
+    document.querySelectorAll(".chip[data-id]")
+      .forEach((btn) => btn.addEventListener("click", () => toggle(btn)));
+
+    updateView(); // vista inicial
+  })();
+
+  // ---------------------- Toggle de lugares ----------------------
+  async function toggle(btn) {
+    const id = btn.getAttribute("data-id");
+    const place = lugares.find((l) => l.id === id);
+    if (!place) return;
+
+    const active = btn.classList.toggle("on");
+    btn.setAttribute("aria-pressed", String(active));
+
+    // apagar
+    if (!active) {
+      markers.get(id)?.remove(); markers.delete(id);
+      layers.get(id)?.remove();  layers.delete(id);
+      updateView();
+      return;
+    }
+
+    // encender
+    const dest =
+      place.lat && place.lng
+        ? { lat: place.lat, lng: place.lng }
+        : place.query
+          ? fromCacheSmart(place.query) || (await geocodeSmart(place.query))
+          : null;
+    if (!dest) return;
+
+    const m = L.marker([dest.lat, dest.lng], { title: place.name }).addTo(map);
+    markers.set(id, m);
+
+    let text = place.name, layer;
+
+    // Intenta OSRM; si falla, usa Haversine sin romper
+    let rt = null;
+    if (useRouting) {
+      rt = await routeOSRM(base, dest).catch(() => null);
+    }
+    if (rt && Number.isFinite(rt.distanceKm) && Number.isFinite(rt.durationMin)) {
+      text += `<br><b>${rt.distanceKm.toFixed(1)} km</b> • ${Math.round(rt.durationMin)} min aprox.`;
+      layer = L.geoJSON(rt.geojson, {
+        style: { color: brandColor, weight: 4, opacity: 0.95 },
+      }).addTo(map);
+    } else {
+      const km = haversine(base, dest);
+      text += `<br><b>${km.toFixed(1)} km en línea recta</b>`;
+      layer = L.polyline(
+        [[base.lat, base.lng],[dest.lat, dest.lng]],
+        { color: brandColor, weight: 3 }
+      ).addTo(map);
+    }
+
+    layers.set(id, layer);
+
+    // ajusta la vista a todos los puntos activos (y rutas)
+    updateView();
+
+    m.bindPopup(text).openPopup();
+  }
+</script>
+
+
+
+<style>
+  .map-wrap {
+    border-radius: 20px;
+    overflow: hidden;
+    background: #000;
+  }
+  .map {
+    width: 100%;
+    height: var(--alto);
+  }
+
+  /* Botonera estilo chips */
+  .botonera {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .chip {
+    appearance: none;
+    border: 1px solid #e6e2df;
+    background: #fff;
+    color: #333;
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
+  .chip:hover {
+    border-color: #d6d1ce;
+  }
+  .chip.on {
+    background: green;
+    color: white;
+    border-color: lightblue;
+  }
+</style>

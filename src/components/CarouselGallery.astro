@@ -1,0 +1,489 @@
+---
+// Tipos base
+type Categoria = "Interiores" | "Exteriores" | "Parque" | "Pileta";
+
+type GroupBy = 'category' | 'cabin';
+
+interface ImageItem {
+  imagen: string;
+  categoria: Categoria;
+  caption?: string; // ID de cabaña si existe
+  alt?: string;
+  width?: number;
+  height?: number;
+}
+type GalleryData = Record<Categoria, ImageItem[]>;
+
+// Diccionario mínimo que necesita el componente
+type GalleryDict = {
+  aria: { prev: string; next: string; close: string; gallery: string };
+  categories: Record<Categoria, string>;
+  badge: { viewMoreCabin: string; backToCategory: string }; // usa {{id}} y {{cat}}
+  cta?: { reserve: string }; // NUEVO: texto del botón
+};
+
+interface Props {
+  data: Partial<GalleryData>;
+  intervalMs?: number;
+  dict?: GalleryDict; // i18n inyectado desde tu sistema
+  groupBy?: GroupBy;  // 'category' (default) | 'cabin'
+  reserveUrl?: string;                 // NUEVO: plantilla URL, usa {{id}}
+  reserveTarget?: '_self' | '_blank';  // opcional
+}
+
+// Fallback ES por si no pasan dict
+const esFallback: GalleryDict = {
+  aria: { prev: 'Anterior', next: 'Siguiente', close: 'Cerrar', gallery: 'Galería de imágenes' },
+  categories: { Interiores: 'Interiores', Exteriores: 'Exteriores', Parque: 'Parque', Pileta: 'Pileta' },
+  badge: { viewMoreCabin: 'ver más fotos cabaña {{id}}', backToCategory: 'volver a {{cat}}' },
+  cta: { reserve: 'Reservar' },
+};
+
+const { data, intervalMs = 4000, dict, groupBy = 'category', reserveUrl = '', reserveTarget = '_self' } = Astro.props as Props;
+const G = { ...esFallback, ...(dict ?? {}) };
+
+const CAT_ORDER = ( ["Interiores", "Exteriores", "Parque", "Pileta"] as const );
+
+// Helpers SSR para agrupar por cabaña
+const allItemsSSR = CAT_ORDER.flatMap((c) => (data?.[c] ?? []).map((it) => ({...it})));
+const orderedCabinsSSR = Array.from(new Set(allItemsSSR
+  .map(it => it.caption)
+  .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+));
+
+// Elegimos grupos e inicial según groupBy
+const orderedCats = CAT_ORDER.filter((c) => (data?.[c]?.length ?? 0) > 0);
+const orderedGroups = groupBy === 'category' ? orderedCats : orderedCabinsSSR;
+const initialGroup = orderedGroups[0] ?? (groupBy === 'category' ? 'Interiores' : '');
+
+function getBatchSSR(key: string) {
+  if (groupBy === 'category') return data?.[key as Categoria] ?? [];
+  // cabin: juntar todas las fotos cuya caption === key
+  return allItemsSSR.filter(it => it.caption && String(it.caption) === String(key));
+}
+
+const uid = `gal-${Math.random().toString(36).slice(2)}`;
+const firstBatch = getBatchSSR(String(initialGroup));
+
+// Payloads para el cliente
+const payloadAttr = encodeURIComponent(JSON.stringify(data || {}));
+const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
+---
+
+<section
+  id={uid}
+  data-comp="carousel"
+  class="w-full"
+  data-interval={intervalMs}
+  data-initial={initialGroup}
+  data-payload={payloadAttr}
+  data-cats={catsAttr}
+  data-t-view-more={G.badge.viewMoreCabin}
+  data-t-back-to={G.badge.backToCategory}
+  data-group-by={groupBy}
+  data-reserve-url={reserveUrl}
+  data-reserve-target={reserveTarget}
+  data-t-reserve={G.cta?.reserve ?? 'Reservar'}
+>
+  <!-- Selector de grupos -->
+  <div class="mb-4 flex flex-wrap gap-2">
+    {
+      (orderedGroups as string[]).map((key) => (
+        <button
+          type="button"
+          class="cat-chip inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400 data-[active=true]:bg-gray-900 data-[active=true]:text-white"
+          data-cat={key}
+          data-active={String(key) === String(initialGroup)}
+          aria-pressed={String(key) === String(initialGroup)}
+        >
+          <span class="shrink-0" set:html={`<svg aria-hidden='true' viewBox='0 0 24 24' class='w-5 h-5'><circle cx='12' cy='12' r='10' fill='none' stroke='currentColor' stroke-width='1.5'/></svg>`} />
+          <span>
+            {groupBy === 'category'
+              ? G.categories[key as Categoria]
+              : `Cabaña ${key}`}
+          </span>
+        </button>
+      ))
+    }
+  </div>
+
+  <!-- Carrusel -->
+  <div class="relative group">
+    <button
+      type="button"
+      class="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 backdrop-blur border p-2 shadow hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400"
+      aria-label={G.aria.prev}
+      data-prev
+    >
+      <svg viewBox="0 0 24 24" class="w-5 h-5"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+    <button
+      type="button"
+      class="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 backdrop-blur border p-2 shadow hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400"
+      aria-label={G.aria.next}
+      data-next
+    >
+      <svg viewBox="0 0 24 24" class="w-5 h-5"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+
+    <!-- padding interno + fotos más chicas para separar del borde -->
+    <div class="overflow-hidden rounded-2xl border p-4 sm:px-10 sm:py-4 bg-white">
+      <ul class="flex justify-center gap-4 scroll-smooth snap-x snap-mandatory" data-track tabindex="0" aria-label={G.aria.gallery}>
+        {
+          firstBatch.map((item, i) => (
+            <li class="snap-start flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_31%]" data-idx={i}>
+              <figure class="h-full flex flex-col">
+                <img
+                  src={item.imagen}
+                  alt={item.alt ?? (groupBy === 'category' ? (item.caption ?? `${G.categories[item.categoria]} ${i + 1}`) : (item.caption ? `Cabaña ${item.caption}` : `${G.categories[item.categoria]} ${i + 1}`))}
+                  loading={i < 3 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchpriority={i === 0 ? "high" : "auto"}
+                  width={item.width}
+                  height={item.height}
+                  class="w-full h-56 sm:h-64 lg:h-72 object-cover select-none pointer-events-auto rounded-2xl"
+                />
+                {/** sin figcaption debajo **/}
+              </figure>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="fixed inset-0 z-[9999] hidden" aria-hidden="true" data-lightbox>
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm z-0" data-lb-overlay></div>
+
+    <button type="button" class="absolute top-4 right-4 z-20 rounded-full bg-white/90 border p-2 shadow focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400" aria-label={G.aria.close} data-lb-close>
+      <svg viewBox="0 0 24 24" class="w-5 h-5"><path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+
+    <button type="button" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 border p-2 shadow" aria-label={G.aria.prev} data-lb-prev>
+      <svg viewBox="0 0 24 24" class="w-6 h-6"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 border p-2 shadow" aria-label={G.aria.next} data-lb-next>
+      <svg viewBox="0 0 24 24" class="w-6 h-6"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+
+    <figure class="relative z-10 h-full w-full flex items-center justify-center">
+      <img data-lb-img class="max-h-[90vh] max-w-[95vw] object-contain will-change-transform select-none" alt="" />
+      {/** sin etiqueta de categoría en lightbox **/}
+      <!-- Badge de cabaña (toggle categoria/cabaña). En groupBy='cabin' queda oculto -->
+      <button type="button" data-lb-cabin
+        class="absolute bottom-6 left-6 z-20 rounded-full border px-3 py-1.5 text-sm shadow bg-white/90
+               hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400
+               data-[active=true]:bg-gray-900 data-[active=true]:text-white hidden"
+        aria-pressed="false">
+        <!-- Texto por JS -->
+      </button>
+      <!-- Botón RESERVAR (solo visible en modo 'cabin' o cuando se entra a cabaña en el lightbox) -->
+      <a data-lb-reserve
+         class="absolute bottom-6 right-6 z-20 rounded-full border px-3 py-1.5 text-sm shadow bg-white/90
+                hover:bg-white focus:outline-none focus-visible:ring-2 ring-offset-2 ring-gray-400 hidden"
+         rel="nofollow noopener">
+        <!-- Texto por JS -->
+      </a>
+    </figure>
+  </div>
+
+  <!-- Lógica cliente (JS puro) -->
+  <script is:inline>
+    (() => {
+      const root = document.currentScript?.closest('section');
+      if (!root) return;
+
+      // Datos desde data-attrs
+      let data = {}; let catsMap = {};
+      try { data = JSON.parse(decodeURIComponent(root.dataset.payload || '%7B%7D')); } catch (e) { console.error('Payload inválido:', e); return; }
+      try { catsMap = JSON.parse(decodeURIComponent(root.dataset.cats || '%7B%7D')); } catch {}
+
+      const groupBy = root.dataset.groupBy === 'cabin' ? 'cabin' : 'category';
+
+      // Templates i18n para el badge (sin regex para evitar escapes)
+      const tViewTpl = root.dataset.tViewMore || 'ver más fotos cabaña {{id}}';
+      const tBackTpl = root.dataset.tBackTo || 'volver a {{cat}}';
+      const reserveUrlTpl = root.dataset.reserveUrl || '';
+      const reserveTarget = root.dataset.reserveTarget || '_self';
+      const tReserve = root.dataset.tReserve || 'Reservar';
+      const fmt = (tpl, vars) => (tpl || '').replaceAll('{{id}}', String(vars?.id ?? '')).replaceAll('{{cat}}', String(vars?.cat ?? ''));
+      const tCat = (cat) => catsMap?.[cat] || String(cat || '');
+
+      const intervalMs = Number(root.dataset.interval || 4000);
+      const initialGroup = root.dataset.initial || (groupBy === 'category' ? 'Interiores' : '');
+
+      const track   = root.querySelector('[data-track]');
+      const prevBtn = root.querySelector('[data-prev]');
+      const nextBtn = root.querySelector('[data-next]');
+      const chips   = Array.from(root.querySelectorAll('.cat-chip'));
+      if (!track) return;
+
+      // --- Agrupadores ---
+      const CAT_KEYS = Object.keys(data);
+      function allImages() { return CAT_KEYS.flatMap(c => (data[c] || []).map((it, i) => ({ ...it, __cat: c, __idx: i })) ); }
+
+      // Mapa de grupos según groupBy
+      function buildGroups() {
+        if (groupBy === 'category') return { map: data, keys: CAT_KEYS };
+        // cabin
+        const map = {};
+        for (const it of allImages()) {
+          const id = (it.caption || '').toString();
+          if (!id) continue;
+          (map[id] ||= []).push(it);
+        }
+        const keys = chips.map(ch => ch.dataset.cat).filter(Boolean); // respeta orden SSR
+        return { map, keys };
+      }
+      let { map: GROUPS, keys: GROUP_KEYS } = buildGroups();
+
+      let currentGroup = GROUP_KEYS.includes(initialGroup) ? initialGroup : (GROUP_KEYS[0] || (groupBy === 'category' ? 'Interiores' : ''));
+      let pageIndex = 0;
+      let slidesPerPage = getSlidesPerPage();
+      let timer = null;
+      let isHoverOrFocus = false;
+      let isVisible = true;
+
+      function getGroupItems(key) {
+        const arr = GROUPS?.[key] || [];
+        return arr;
+      }
+
+      function renderGroup(key) {
+        currentGroup = key;
+        chips.forEach(ch => {
+          const active = ch.dataset.cat === key;
+          ch.dataset.active = String(active);
+          ch.setAttribute('aria-pressed', String(active));
+        });
+
+        const items = getGroupItems(key);
+        const html = items.map((item, i) => {
+          const wh = (item.width && item.height) ? ` width="${item.width}" height="${item.height}"` : '';
+          const alt = item.alt
+            || (groupBy === 'category' ? (item.caption || (tCat(item.categoria) + ' ' + (i+1)))
+            : (item.caption ? 'Cabaña ' + item.caption : (tCat(item.categoria) + ' ' + (i+1))));
+          return `
+            <li class=\"snap-start flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.333%]\" data-idx=\"${i}\">
+              <figure class=\"h-full flex flex-col\">
+                <img
+                  src=\"${item.imagen}\"
+                  alt=\"${escapeHtml(alt)}\"
+                  loading=\"${i < 3 ? 'eager' : 'lazy'}\"
+                  decoding=\"async\"
+                  fetchpriority=\"${i === 0 ? 'high' : 'auto'}\"${wh}
+                  class=\"w-full h-56 sm:h-64 lg:h-72 object-cover select-none pointer-events-auto rounded-2xl\"
+                />
+              </figure>
+            </li>`;
+        }).join('');
+
+        track.innerHTML = html;
+        pageIndex = 0;
+        track.scrollTo({ left: 0, behavior: 'auto' });
+        slidesPerPage = getSlidesPerPage();
+      }
+
+      function getSlidesPerPage() { const w = window.innerWidth; if (w >= 1024) return 3; if (w >= 640) return 2; return 1; }
+      function pagesCount() { const total = getGroupItems(currentGroup).length; return Math.max(1, Math.ceil(total / slidesPerPage)); }
+      function goToPage(idx, smooth = true) { const clamped = (idx + pagesCount()) % pagesCount(); pageIndex = clamped; const left = track.clientWidth * clamped; track.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' }); }
+      function nextPage() { goToPage(pageIndex + 1); }
+      function prevPage() { goToPage(pageIndex - 1); }
+
+      function startAutoplay() { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; stopAutoplay(); timer = setInterval(() => { if (!isHoverOrFocus && isVisible && !lightboxOpen) nextPage(); }, Math.max(2200, intervalMs)); }
+      function stopAutoplay() { if (timer) { clearInterval(timer); timer = null; } }
+
+      chips.forEach(ch => ch.addEventListener('click', () => { renderGroup(ch.dataset.cat || currentGroup); startAutoplay(); }));
+      if (prevBtn) prevBtn.addEventListener('click', prevPage);
+      if (nextBtn) nextBtn.addEventListener('click', nextPage);
+
+      track.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); nextPage(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); prevPage(); }
+        else if (e.key === 'Home') { e.preventDefault(); goToPage(0); }
+        else if (e.key === 'End') { e.preventDefault(); goToPage(pagesCount()-1); }
+      });
+      track.addEventListener('mouseenter', () => { isHoverOrFocus = true; });
+      track.addEventListener('mouseleave', () => { isHoverOrFocus = false; });
+      track.addEventListener('focusin',  () => { isHoverOrFocus = true; });
+      track.addEventListener('focusout', () => { isHoverOrFocus = false; });
+
+      const io = new IntersectionObserver(([entry]) => { isVisible = entry?.isIntersecting ?? true; }, { threshold: 0.2 });
+      io.observe(root);
+
+      let resizeT; window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { const before = slidesPerPage; slidesPerPage = getSlidesPerPage(); if (slidesPerPage !== before) goToPage(0, false); }, 120); });
+
+      function escapeHtml(str) { return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+
+      // ---------- LIGHTBOX ----------
+      const lb        = root.querySelector('[data-lightbox]');
+      const lbImg     = root.querySelector('[data-lb-img]');
+      const lbPrev    = root.querySelector('[data-lb-prev]');
+      const lbNext    = root.querySelector('[data-lb-next]');
+      const lbClose   = root.querySelector('[data-lb-close]');
+      const lbOverlay = root.querySelector('[data-lb-overlay]');
+      const lbCabinBtn= root.querySelector('[data-lb-cabin]');
+      const lbReserve = root.querySelector('[data-lb-reserve]');
+
+      let lbMode = 'category'; // 'category' | 'cabin' (solo aplica cuando groupBy === 'category')
+      let activeCabinId = null; // string | null
+      let returnPoint = null;   // { cat: string, index: number } | null
+      let lightboxOpen = false;
+      let lbIndex = 0;
+      let zoom = 1, panX = 0, panY = 0;
+      let drag = false, startX = 0, startY = 0;
+
+      track.addEventListener('click', (e) => {
+        const t = e.target; if (!(t instanceof Element)) return;
+        const img = t.closest('img'); if (!img) return;
+        const li = img.closest('li'); const idx = Number(li?.getAttribute('data-idx') || '0');
+        openLightbox(idx);
+      });
+
+      function openLightbox(idx) {
+        if (groupBy === 'category') {
+          const cats = GROUP_KEYS; // para returnPoint usamos key actual (categoría)
+          returnPoint = { cat: String(currentGroup), index: Number.isFinite(idx) ? idx : 0 };
+          lbMode = 'category'; activeCabinId = null;
+        } else {
+          returnPoint = null; lbMode = 'category'; activeCabinId = null;
+        }
+        lbIndex = Number.isFinite(idx) ? idx : 0;
+        updateLightbox();
+        if (lb) { lb.classList.remove('hidden'); lb.setAttribute('aria-hidden','false'); }
+        document.body.style.overflow = 'hidden';
+        lightboxOpen = true; stopAutoplay();
+      }
+      function closeLightbox() {
+        if (lb) { lb.classList.add('hidden'); lb.setAttribute('aria-hidden','true'); }
+        document.body.style.overflow = '';
+        lightboxOpen = false; lbMode = 'category'; activeCabinId = null; returnPoint = null;
+        resetZoom(); startAutoplay();
+      }
+
+      function getCabinSet(cabinId) { if (!cabinId) return []; return allImages().filter(it => it.caption && String(it.caption) === String(cabinId)); }
+      function getActiveSet() {
+        if (groupBy === 'cabin') {
+          return getGroupItems(currentGroup).map((it, i) => ({ ...it, __cat: it.categoria, __idx: i }));
+        }
+        // groupBy === 'category'
+        if (lbMode === 'cabin' && activeCabinId) return getCabinSet(activeCabinId);
+        return getGroupItems(currentGroup).map((it, i) => ({ ...it, __cat: currentGroup, __idx: i }));
+      }
+
+      function updateCabinBadge(it) {
+        if (!lbCabinBtn) return;
+        if (groupBy === 'cabin') { // oculto permanente en modo agrupación por cabaña
+          lbCabinBtn.classList.add('hidden');
+          lbCabinBtn.removeAttribute('data-active');
+          lbCabinBtn.setAttribute('aria-pressed','false');
+          lbCabinBtn.textContent='';
+          delete lbCabinBtn.dataset.cabinId;
+          return;
+        }
+        const hasCabin = !!it.caption;
+        if (!hasCabin) { lbCabinBtn.classList.add('hidden'); lbCabinBtn.removeAttribute('data-active'); lbCabinBtn.setAttribute('aria-pressed','false'); lbCabinBtn.textContent=''; delete lbCabinBtn.dataset.cabinId; return; }
+        lbCabinBtn.classList.remove('hidden');
+        lbCabinBtn.dataset.cabinId = String(it.caption);
+        const isActive = (lbMode === 'cabin' && String(activeCabinId) === String(it.caption));
+        lbCabinBtn.dataset.active = String(isActive);
+        lbCabinBtn.setAttribute('aria-pressed', String(isActive));
+        if (isActive) {
+          const catText = (returnPoint?.cat && tCat(returnPoint.cat)) || tCat(it.categoria);
+          lbCabinBtn.textContent = fmt(tBackTpl, { cat: catText });
+        } else {
+          lbCabinBtn.textContent = fmt(tViewTpl, { id: String(it.caption) });
+        }
+      }
+
+      function updateReserveBtn(it) {
+        if (!lbReserve) return;
+        // Mostrar si: agrupado por cabaña, o estamos en vista de cabaña dentro del lightbox
+        const show = (groupBy === 'cabin') || (groupBy === 'category' && lbMode === 'cabin');
+        if (!show) { lbReserve.classList.add('hidden'); return; }
+
+        // Determinar id de cabaña
+        const id = (groupBy === 'cabin')
+          ? String(currentGroup || it.caption || '')
+          : (it.caption ? String(it.caption) : '');
+
+        if (!id) { lbReserve.classList.add('hidden'); return; }
+
+        lbReserve.textContent = tReserve;
+        lbReserve.setAttribute('target', reserveTarget);
+        const href = reserveUrlTpl
+          ? reserveUrlTpl.replaceAll('{{id}}', encodeURIComponent(id))
+          : `/reservas?cabana=${encodeURIComponent(id)}`; // fallback sensato
+        lbReserve.setAttribute('href', href);
+        lbReserve.classList.remove('hidden');
+      }
+
+      function updateLightbox() {
+        const set = getActiveSet(); if (!set.length) return;
+        lbIndex = (lbIndex + set.length) % set.length; const it = set[lbIndex];
+        if (lbImg instanceof HTMLImageElement) { lbImg.src = it.imagen; lbImg.alt = it.alt || it.caption || (tCat(it.categoria) || ''); }
+        else if (lbImg) { lbImg.setAttribute('src', it.imagen); lbImg.setAttribute('alt', it.alt || it.caption || (tCat(it.categoria) || '')); }
+        updateCabinBadge(it);
+        updateReserveBtn(it);
+        preloadNeighbor(); resetZoom();
+      }
+
+      // Toggle categoría/cabaña con el badge (solo cuando groupBy === 'category')
+      if (lbCabinBtn && groupBy === 'category') {
+        lbCabinBtn.addEventListener('click', () => {
+          const cabinId = lbCabinBtn.dataset.cabinId; if (!cabinId) return;
+          if (lbMode !== 'cabin') {
+            const currentSet = getActiveSet();
+            const currentItem = currentSet[(lbIndex + currentSet.length) % currentSet.length];
+            lbMode = 'cabin'; activeCabinId = cabinId;
+            const cabinSet = getCabinSet(cabinId);
+            const sameIdx = cabinSet.findIndex(x => x.imagen === currentItem.imagen);
+            lbIndex = sameIdx >= 0 ? sameIdx : 0;
+            updateLightbox();
+          } else {
+            lbMode = 'category'; activeCabinId = null;
+            if (returnPoint) {
+              currentGroup = returnPoint.cat; // volvemos a la categoría previa
+              chips.forEach(ch => { const active = ch.dataset.cat === currentGroup; ch.dataset.active = String(active); ch.setAttribute('aria-pressed', String(active)); });
+              lbIndex = returnPoint.index;
+            }
+            updateLightbox();
+          }
+        });
+      }
+
+      function nextLb() { lbIndex++; updateLightbox(); }
+      function prevLb() { lbIndex--; updateLightbox(); }
+
+      function resetZoom() { zoom = 1; panX = 0; panY = 0; applyTransform(); if (lbImg) { lbImg.classList.remove('cursor-move'); lbImg.classList.add('cursor-zoom-in'); } }
+      function applyTransform() { if (!(lbImg instanceof HTMLElement)) return; lbImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`; lbImg.style.transition = 'transform 120ms ease'; setTimeout(() => { if (lbImg instanceof HTMLElement) lbImg.style.transition = ''; }, 140); }
+      function toggleZoom(ev) { if (!(lbImg instanceof HTMLElement)) return; const rect = lbImg.getBoundingClientRect(); const cx = ev.clientX - rect.left - rect.width / 2; const cy = ev.clientY - rect.top - rect.height / 2; if (zoom === 1) { zoom = 2.5; panX = -cx * 1.1; panY = -cy * 1.1; lbImg.classList.add('cursor-move'); lbImg.classList.remove('cursor-zoom-in'); } else { resetZoom(); return; } applyTransform(); }
+      function startDrag(e) { if (zoom === 1 || !(lbImg instanceof HTMLElement)) return; drag = true; startX = e.clientX - panX; startY = e.clientY - panY; }
+      function onDrag(e) { if (!drag) return; panX = e.clientX - startX; panY = e.clientY - startY; applyTransform(); }
+      function endDrag() { drag = false; }
+
+      lbOverlay && lbOverlay.addEventListener('click', closeLightbox);
+      lbClose && lbClose.addEventListener('click', closeLightbox);
+      lbNext && lbNext.addEventListener('click', nextLb);
+      lbPrev && lbPrev.addEventListener('click', prevLb);
+      lbImg && lbImg.addEventListener('click', (e) => toggleZoom(e));
+      lbImg && lbImg.addEventListener('mousedown', startDrag);
+      window.addEventListener('mousemove', onDrag);
+      window.addEventListener('mouseup', endDrag);
+
+      document.addEventListener('keydown', (e) => { if (!lightboxOpen) return; if (e.key === 'Escape') closeLightbox(); if (e.key === 'ArrowRight') nextLb(); if (e.key === 'ArrowLeft') prevLb(); if (e.key === ' ') e.preventDefault(); });
+
+      function preloadNeighbor() { const set = getActiveSet(); if (!set.length) return; const n1 = new Image(); n1.src = set[(lbIndex + 1) % set.length]?.imagen || ''; const n2 = new Image(); n2.src = set[(lbIndex - 1 + set.length) % set.length]?.imagen || ''; }
+
+      // Init
+      renderGroup(currentGroup);
+      startAutoplay();
+      document.addEventListener('visibilitychange', () => { if (document.hidden) stopAutoplay(); else if (!lightboxOpen) startAutoplay(); });
+    })();
+  </script>
+</section>
+
+<style is:global>
+  [data-track] { scroll-snap-type: x mandatory; }
+</style>

@@ -1,0 +1,29 @@
+---
+import { locales, type Locale } from "../i18n/config";
+
+const { current } = Astro.props as { current: Locale };
+
+// arma URLs del mismo path cambiando el lang del primer segmento
+const url = new URL(Astro.url);
+const parts = url.pathname.split("/").filter(Boolean);
+if (parts.length === 0) parts.push(current);
+parts[0] = current; // ensure current is set for active state
+function langHref(l: string) {
+  const p = [...parts];
+  p[0] = l;
+  return "/" + p.join("/") + (url.search || "");
+}
+---
+<nav class="flex gap-2 justify-end p-4">
+  {locales.map((l) => (
+    <a
+      href={langHref(l)}
+      class:list={[
+        "px-3 py-1 rounded-md border",
+        l === current ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-900 border-gray-300"
+      ]}
+    >
+      {l.toUpperCase()}
+    </a>
+  ))}
+</nav>

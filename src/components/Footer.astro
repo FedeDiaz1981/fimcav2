@@ -1,0 +1,104 @@
+---
+// Footer.astro
+import { getDict, type Locale } from "../i18n/config";
+
+type Props = {
+  lang: Locale;
+  phoneHref?: string;        // ej: "tel:+5492640000000"  o "https://wa.me/549264..."
+  emailHref?: string;        // ej: "mailto:info@fincacasiana.com"
+  mapsHref?: string;         // ej: "https://maps.google.com/?q=Finca+Casiana+San+Juan"
+  instagramHref?: string;    // ej: "https://instagram.com/fincacasiana"
+  tiktokHref?: string;       // ej: "https://tiktok.com/@fincacasiana"
+  bookingHref?: string;      // ej: "https://www.booking.com/..."
+  airbnbHref?: string;       // ej: "https://www.airbnb.com/..."
+  instagramHandle?: string;  // ej: "@fincacasiana"
+};
+
+const {
+  lang,
+  phoneHref = "#",
+  emailHref = "mailto:info@fincacasiana.com",
+  mapsHref = "#",
+  instagramHref = "#",
+  tiktokHref = "#",
+  bookingHref = "#",
+  airbnbHref = "#",
+  instagramHandle = "@fincacasiana",
+} = Astro.props as Props;
+
+const t = getDict(lang);
+
+// Rutas por idioma (podés moverlas al diccionario si querés)
+const paths = t.footer?.paths ?? {
+  cancel: lang === "es" ? "/es/politica-de-cancelacion" : "/en/cancellation-policy",
+  terms:  lang === "es" ? "/es/terminos-y-condiciones" : "/en/terms-and-conditions",
+  privacy:lang === "es" ? "/es/politica-de-privacidad" : "/en/privacy-policy",
+  reserve:lang === "es" ? "/es/reservas" : "/en/reservations",
+  contact:lang === "es" ? "/es/contacto" : "/en/contact",
+};
+
+const year = new Date().getFullYear();
+const ACCENT = "#C76B4E";
+---
+
+<footer class="bg-white border-t border-stone-200" style={`--accent:${ACCENT}`}>
+  <div class="container mx-auto px-4 py-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <!-- Contact -->
+      <section>
+        <h4 class="text-stone-900 font-semibold">{t.footer.contactTitle}</h4>
+        <div class="mt-1 h-0.5 w-12 rounded-full" style="background:var(--accent)"></div>
+        <ul class="mt-4 space-y-2 text-stone-700">
+          <li class="flex items-start gap-3">
+            <span class="text-stone-400">📞</span>
+            <a class="hover:text-[var(--accent)]" href={phoneHref}>{t.footer.phone}</a>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-stone-400">📧</span>
+            <a class="hover:text-[var(--accent)]" href={emailHref}>{t.footer.email}</a>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-stone-400">📍</span>
+            <a class="hover:text-[var(--accent)]" target="_blank" rel="noopener" href={mapsHref}>
+              {t.footer.address}
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Social -->
+      <section>
+        <h4 class="text-stone-900 font-semibold">{t.footer.socialTitle}</h4>
+        <div class="mt-1 h-0.5 w-12 rounded-full" style="background:var(--accent)"></div>
+        <ul class="mt-4 space-y-2 text-stone-700">
+          <li><a class="hover:text-[var(--accent)]" target="_blank" rel="noopener" href={instagramHref}>Instagram: {instagramHandle}</a></li>
+          <li><a class="hover:text-[var(--accent)]" target="_blank" rel="noopener" href={tiktokHref}>TikTok</a></li>
+          <li><a class="hover:text-[var(--accent)]" target="_blank" rel="noopener" href={bookingHref}>Booking</a></li>
+          <li><a class="hover:text-[var(--accent)]" target="_blank" rel="noopener" href={airbnbHref}>Airbnb</a></li>
+        </ul>
+      </section>
+
+      <!-- Useful links -->
+      <section>
+        <h4 class="text-stone-900 font-semibold">{t.footer.usefulTitle}</h4>
+        <div class="mt-1 h-0.5 w-12 rounded-full" style="background:var(--accent)"></div>
+        <ul class="mt-4 space-y-2 text-stone-700">
+          <li><a class="hover:text-[var(--accent)]" href={paths.cancel}>{t.footer.cancelPolicy}</a></li>
+          <li><a class="hover:text-[var(--accent)]" href={paths.terms}>{t.footer.terms}</a></li>
+          <li><a class="hover:text-[var(--accent)]" href={paths.privacy}>{t.footer.privacy}</a></li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="mt-10 border-t border-stone-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-stone-500">
+      <div class="flex items-center gap-3">
+        <span>© {year} Finca Casiana. {t.footer.rights}</span>
+      </div>
+      <nav class="flex items-center gap-6 hidden">
+        <a class="hover:text-[var(--accent)]" href={paths.reserve}>{t.footer.ctaReserve}</a>
+        <a class="hover:text-[var(--accent)]" href={paths.contact}>{t.footer.ctaContact}</a>
+      </nav>
+    </div>
+  </div>
+</footer>

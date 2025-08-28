@@ -1,0 +1,46 @@
+/* Fuentes locales (TTF). Idealmente convertí a WOFF2 cuando puedas. */
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito/Nunito-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito/Nunito-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito/Nunito-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Display / acento */
+@font-face {
+  font-family: "Belleza";
+  src: url("/fonts/Belleza/Belleza-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root{
+  --font-sans: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Belleza", Georgia, "Times New Roman", serif;
+}
+
+html, body { font-family: var(--font-sans); }
+
+/* Ejemplo: títulos con Belleza (ajustá a gusto) */
+h1, h2, h3 { font-family: var(--font-display); }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
