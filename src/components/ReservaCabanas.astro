@@ -297,7 +297,28 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         DICT = JSON.parse(decodeURIComponent(root.dataset.dict || "%7B%7D"));
       } catch {}
       const ONLY = root.dataset.only || "";
-      const MONTHS = Math.max(1, Number(root.dataset.months || 3));
+      // Meses: en desktop se respeta el prop; en mobile (<640px) forzamos 1
+      const BASE_MONTHS = Math.max(1, Number(root.dataset.months || 3));
+      let VISIBLE_MONTHS = BASE_MONTHS;
+
+      const MQL_MOBILE = window.matchMedia("(max-width: 639px)");
+      function applyResponsiveMonths(shouldRender = false) {
+        const next = MQL_MOBILE.matches ? 1 : BASE_MONTHS;
+        if (next !== VISIBLE_MONTHS) {
+          VISIBLE_MONTHS = next;
+          if (shouldRender) renderCalendars(); // re-render sólo si cambió
+        }
+      }
+      // set inicial + listener (compat)
+      applyResponsiveMonths(false);
+      if (typeof MQL_MOBILE.addEventListener === "function") {
+        MQL_MOBILE.addEventListener("change", () =>
+          applyResponsiveMonths(true)
+        );
+      } else {
+        // Safari viejo
+        MQL_MOBILE.addListener(() => applyResponsiveMonths(true));
+      }
       const MIN_ISO = root.dataset.min || "";
 
       // Estado
@@ -514,7 +535,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         if (!calWrap) return;
         const firstMonth = startOfMonth(focusDate);
         let html = "";
-        for (let i = 0; i < MONTHS; i++)
+        for (let i = 0; i < VISIBLE_MONTHS; i++)
           html += renderMonth(addMonths(firstMonth, i));
         calWrap.innerHTML = html;
         calWrap.querySelectorAll("[data-day]")?.forEach((el) => {
@@ -684,31 +705,38 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
 
       // Init
       recomputeFromStart(true);
+      applyResponsiveMonths(false);
       renderAll();
     })();
   </script>
 </section>
 
 <style is:global>
-/* Transiciones suaves */
-[data-calendars] [data-day] { transition: background-color .12s ease, color .12s ease, box-shadow .12s ease; }
+  /* Transiciones suaves */
+  [data-calendars] [data-day] {
+    transition:
+      background-color 0.12s ease,
+      color 0.12s ease,
+      box-shadow 0.12s ease;
+  }
 
-/* Botones de navegación del mes, minimal */
-.cal-nav-btn{
-  @apply rounded-full border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50;
-}
+  /* Botones de navegación del mes, minimal */
+  .cal-nav-btn {
+    @apply rounded-full border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50;
+  }
 
-/* Estado seleccionado: burbuja negra, como en la imagen */
-[data-calendars] [data-day].sel{
-  @apply bg-gray-900 text-white;
-}
+  /* Estado seleccionado: burbuja negra, como en la imagen */
+  [data-calendars] [data-day].sel {
+    @apply bg-gray-900 text-white;
+  }
 
-/* Días que no pueden iniciar (tu lógica ya los marca con data-disabled=true) */
-[data-calendars] [data-day][data-disabled="true"]{
-  @apply text-gray-300;
-}
+  /* Días que no pueden iniciar (tu lógica ya los marca con data-disabled=true) */
+  [data-calendars] [data-day][data-disabled="true"] {
+    @apply text-gray-300;
+  }
 
-/* Quita bordes duros heredados en contenedores y deja look aireado */
-[data-comp="booking"] .rounded-2xl.border { border-color: #e5e7eb; } /* gris suave */
-
+  /* Quita bordes duros heredados en contenedores y deja look aireado */
+  [data-comp="booking"] .rounded-2xl.border {
+    border-color: #e5e7eb;
+  } /* gris suave */
 </style>
