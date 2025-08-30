@@ -102,11 +102,11 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
     </button>
 
     <!-- padding interno + fotos más chicas para separar del borde -->
-    <div class="overflow-hidden rounded-2xl p-4 sm:px-10 sm:py-4 bg-transparent">
-      <ul class="flex justify-center gap-4 scroll-smooth snap-x snap-mandatory" data-track tabindex="0" aria-label={G.aria.gallery}>
+    <div class="overflow-hidden rounded-2xl px-2 sm:px-4 py-4 bg-transparent">
+      <ul class="flex justify-start gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory" data-track tabindex="0" aria-label={G.aria.gallery}>
         {
           firstBatch.map((item, i) => (
-            <li class="snap-start flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_31%]" data-idx={i}>
+            <li class="snap-start flex-none basis-full sm:basis-[calc((100%-1rem)/2)] lg:basis-[calc((100%-2rem)/3)]" data-idx={i}>
               <figure class="h-full flex flex-col">
                 <img
                   src={item.imagen}
@@ -176,7 +176,8 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
       const tReserve = root.dataset.tReserve || 'Reservar';
       const fmt = (tpl, vars) => (tpl || '').replaceAll('{{id}}', String(vars?.id ?? '')).replaceAll('{{cat}}', String(vars?.cat ?? ''));
       const tCat = (cat) => catsMap?.[cat] || String(cat || '');
-      const intervalMs = Number(root.dataset.interval || 4000);
+      const intervalMs = Number(root.dataset.interval || 0);
+      const autoplay = false;
       const initialGroup = root.dataset.initial || (groupBy === 'category' ? 'Interiores' : '');
 
       const track   = root.querySelector('[data-track]');
@@ -210,10 +211,11 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
         chips.forEach(ch => { const active = ch.dataset.cat === key; ch.dataset.active = String(active); ch.setAttribute('aria-pressed', String(active)); });
         const items = getGroupItems(key);
         const html = items.map((item, i) => {
+          console.log(item);
           const wh = (item.width && item.height) ? ` width="${item.width}" height="${item.height}"` : '';
           const alt = item.alt || (groupBy === 'category' ? (item.caption || (tCat(item.categoria) + ' ' + (i+1))) : (item.caption ? 'Cabaña ' + item.caption : (tCat(item.categoria) + ' ' + (i+1))));
           return `
-            <li class=\"snap-start flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.333%]\" data-idx=\"${i}\">
+            <li class=\"snap-start flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_32.07%]\" data-idx=\"${i}\">
               <figure class=\"h-full flex flex-col\">
                 <img src=\"${item.imagen}\" alt=\"${escapeHtml(alt)}\" loading=\"${i < 3 ? 'eager' : 'lazy'}\" decoding=\"async\" fetchpriority=\"${i === 0 ? 'high' : 'auto'}\"${wh}
                      class=\"w-full h-56 sm:h-64 lg:h-[30rem] object-cover select-none pointer-events-auto rounded-2xl\" />
@@ -231,8 +233,8 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
       function nextPage() { goToPage(pageIndex + 1); }
       function prevPage() { goToPage(pageIndex - 1); }
 
-      function startAutoplay() { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; stopAutoplay(); timer = setInterval(() => { if (!isHoverOrFocus && isVisible && !lightboxOpen) nextPage(); }, Math.max(2200, intervalMs)); }
-      function stopAutoplay() { if (timer) { clearInterval(timer); timer = null; } }
+      function startAutoplay() { /*N/A*/}
+      function stopAutoplay() {/*N/A*/ }
 
       chips.forEach(ch => ch.addEventListener('click', () => { renderGroup(ch.dataset.cat || currentGroup); startAutoplay(); }));
       if (prevBtn) prevBtn.addEventListener('click', prevPage);
@@ -393,5 +395,14 @@ const catsAttr = encodeURIComponent(JSON.stringify(G.categories));
 </section>
 
 <style is:global>
-  [data-track] { scroll-snap-type: x mandatory; }
+[data-track] {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;           /* Firefox */
+  }
+  [data-track]::-webkit-scrollbar {  /* Chrome / Safari / Edge */
+    width: 0;
+    height: 0;
+    display: none;
+  }
 </style>

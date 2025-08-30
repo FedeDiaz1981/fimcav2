@@ -1,0 +1,223 @@
+---
+interface SimpleItem {
+  imagen: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+}
+
+interface Props { items: SimpleItem[]; id?: string; }
+
+const { items, id = `sg-${Math.random().toString(36).slice(2)}` } = Astro.props as Props;
+const payloadAttr = encodeURIComponent(JSON.stringify(items || []));
+---
+
+<section
+  id={id}
+  data-comp="simple-gallery"
+  class="w-full"
+  data-payload={payloadAttr}
+  aria-label="Galería de imágenes"
+>
+  <!-- Carrusel -->
+  <div class="relative group">
+    <button
+      type="button"
+      class="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 backdrop-blur
+             border border-neutralish-300 p-2 shadow hover:bg-white text-neutralish-700
+             focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-300"
+      aria-label="Anterior"
+      data-prev
+    >
+      <svg viewBox="0 0 24 24" class="w-5 h-5"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+
+    <button
+      type="button"
+      class="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 backdrop-blur
+             border border-neutralish-300 p-2 shadow hover:bg-white text-neutralish-700
+             focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-300"
+      aria-label="Siguiente"
+      data-next
+    >
+      <svg viewBox="0 0 24 24" class="w-5 h-5"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+
+    <!-- padding interno + fotos más chicas para separar del borde -->
+    <div class="overflow-hidden rounded-2xl px-2 sm:px-4 py-6 bg-transparent">
+      <ul class="flex justify-start gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory" data-track tabindex="0" aria-label="Galería de imágenes">
+        {
+          items.map((item, i) => (
+            <li class="snap-start flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_30%]" data-idx={i}>
+              <figure class="h-full flex flex-col">
+                <img
+                  src={item.imagen}
+                  alt={item.alt ?? `Foto ${i + 1}`}
+                  loading={i < 3 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchpriority={i === 0 ? "high" : "auto"}
+                  width={item.width}
+                  height={item.height}
+                  class="w-full h-56 sm:h-64 lg:h-[30rem] object-cover select-none pointer-events-auto rounded-2xl"
+                />
+              </figure>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="fixed inset-0 z-[9999] hidden" aria-hidden="true" data-lightbox>
+    <div class="absolute inset-0 bg-neutralish-900/80 backdrop-blur-sm z-0" data-lb-overlay></div>
+
+    <button type="button" class="absolute top-4 right-4 z-20 rounded-full bg-white/90 border border-neutralish-300 p-2 shadow focus:outline-none focus-visible:ring-2 ring-offset-2 ring-finca-300" aria-label="Cerrar" data-lb-close>
+      <svg viewBox="0 0 24 24" class="w-5 h-5 text-neutralish-700"><path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+
+    <button type="button" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 border border-neutralish-300 p-2 shadow text-neutralish-700" aria-label="Anterior" data-lb-prev>
+      <svg viewBox="0 0 24 24" class="w-6 h-6"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 border border-neutralish-300 p-2 shadow text-neutralish-700" aria-label="Siguiente" data-lb-next>
+      <svg viewBox="0 0 24 24" class="w-6 h-6"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+
+    <figure class="relative z-10 h-full w-full flex items-center justify-center">
+      <img data-lb-img class="max-h-[90vh] max-w-[95vw] object-contain will-change-transform select-none cursor-zoom-in rounded-[22px] shadow-[0_10px_30px_rgba(0,0,0,.2)] bg-white" alt="" />
+    </figure>
+  </div>
+
+  <script is:inline>
+    (() => {
+      const root = document.currentScript?.closest('section');
+      if (!root) return;
+
+      let items = [];
+      try { items = JSON.parse(decodeURIComponent(root.dataset.payload || '%5B%5D')); }
+      catch (e) { console.error('Payload inválido:', e); return; }
+
+      const track = root.querySelector('[data-track]');
+      const prevBtn = root.querySelector('[data-prev]');
+      const nextBtn = root.querySelector('[data-next]');
+      if (!track) return;
+
+      let pageIndex = 0;
+      function slidesPerPage() { const w = window.innerWidth; if (w >= 1024) return 3; if (w >= 640) return 2; return 1; }
+      function pagesCount() { return Math.max(1, Math.ceil(items.length / slidesPerPage())); }
+      function goToPage(idx, smooth = true) {
+        const clamped = (idx + pagesCount()) % pagesCount();
+        pageIndex = clamped;
+        const left = track.clientWidth * clamped;
+        track.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' });
+      }
+      function nextPage() { goToPage(pageIndex + 1); }
+      function prevPage() { goToPage(pageIndex - 1); }
+
+      prevBtn && prevBtn.addEventListener('click', prevPage);
+      nextBtn && nextBtn.addEventListener('click', nextPage);
+
+      track.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); nextPage(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); prevPage(); }
+        else if (e.key === 'Home') { e.preventDefault(); goToPage(0); }
+        else if (e.key === 'End') { e.preventDefault(); goToPage(pagesCount()-1); }
+      });
+
+      let resizeT;
+      window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => goToPage(0, false), 120); });
+
+      // Lightbox
+      const lb = root.querySelector('[data-lightbox]');
+      const lbImg = root.querySelector('[data-lb-img]');
+      const lbPrev = root.querySelector('[data-lb-prev]');
+      const lbNext = root.querySelector('[data-lb-next]');
+      const lbClose = root.querySelector('[data-lb-close]');
+      const lbOverlay = root.querySelector('[data-lb-overlay]');
+
+      let lbIndex = 0;
+      let zoom = 1, panX = 0, panY = 0, drag = false, startX = 0, startY = 0;
+
+      track.addEventListener('click', (e) => {
+        const t = e.target;
+        if (!(t instanceof Element)) return;
+        const img = t.closest('img'); if (!img) return;
+        const li = img.closest('li'); const idx = Number(li?.getAttribute('data-idx') || '0');
+        openLightbox(idx);
+      });
+
+      function openLightbox(idx) {
+        lbIndex = Number.isFinite(idx) ? idx : 0;
+        updateLightbox();
+        lb?.classList.remove('hidden');
+        lb?.setAttribute('aria-hidden','false');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeLightbox() {
+        lb?.classList.add('hidden');
+        lb?.setAttribute('aria-hidden','true');
+        document.body.style.overflow = '';
+        resetZoom();
+      }
+
+      function updateLightbox() {
+        lbIndex = (lbIndex + items.length) % items.length;
+        const it = items[lbIndex];
+        if (lbImg instanceof HTMLImageElement) {
+          lbImg.src = it.imagen;
+          lbImg.alt = it.alt || `Foto ${lbIndex + 1}`;
+        }
+        preloadNeighbor();
+        resetZoom();
+      }
+
+      function nextLb() { lbIndex++; updateLightbox(); }
+      function prevLb() { lbIndex--; updateLightbox(); }
+
+      function resetZoom() { zoom = 1; panX = 0; panY = 0; applyTransform(); if (lbImg) { lbImg.classList.remove('cursor-move'); lbImg.classList.add('cursor-zoom-in'); } }
+      function applyTransform() { if (!(lbImg instanceof HTMLElement)) return; lbImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`; lbImg.style.transition = 'transform 120ms ease'; setTimeout(() => { if (lbImg instanceof HTMLElement) lbImg.style.transition = ''; }, 140); }
+      function toggleZoom(ev) { if (!(lbImg instanceof HTMLElement)) return; const rect = lbImg.getBoundingClientRect(); const cx = ev.clientX - rect.left - rect.width / 2; const cy = ev.clientY - rect.top - rect.height / 2; if (zoom === 1) { zoom = 2.5; panX = -cx * 1.1; panY = -cy * 1.1; lbImg.classList.add('cursor-move'); lbImg.classList.remove('cursor-zoom-in'); } else { resetZoom(); return; } applyTransform(); }
+      function startDrag(e) { if (zoom === 1 || !(lbImg instanceof HTMLElement)) return; drag = true; startX = e.clientX - panX; startY = e.clientY - panY; }
+      function onDrag(e) { if (!drag) return; panX = e.clientX - startX; panY = e.clientY - startY; applyTransform(); }
+      function endDrag() { drag = false; }
+
+      lbOverlay && lbOverlay.addEventListener('click', closeLightbox);
+      lbClose && lbClose.addEventListener('click', closeLightbox);
+      lbNext && lbNext.addEventListener('click', nextLb);
+      lbPrev && lbPrev.addEventListener('click', prevLb);
+      lbImg && lbImg.addEventListener('click', (e) => toggleZoom(e));
+      lbImg && lbImg.addEventListener('mousedown', startDrag);
+      window.addEventListener('mousemove', onDrag);
+      window.addEventListener('mouseup', endDrag);
+
+      document.addEventListener('keydown', (e) => {
+        const open = !lb?.classList.contains('hidden');
+        if (!open) return;
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') nextLb();
+        if (e.key === 'ArrowLeft') prevLb();
+        if (e.key === ' ') e.preventDefault();
+      });
+
+      function preloadNeighbor() {
+        if (!items.length) return;
+        const n1 = new Image(); n1.src = items[(lbIndex + 1) % items.length]?.imagen || '';
+        const n2 = new Image(); n2.src = items[(lbIndex - 1 + items.length) % items.length]?.imagen || '';
+      }
+    })();
+  </script>
+</section>
+
+<style is:global>
+  /* mismo comportamiento del carrusel pero con estilo del screenshot */
+  [data-comp="simple-gallery"] [data-track] {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  [data-comp="simple-gallery"] [data-track]::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+</style>

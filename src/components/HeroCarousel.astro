@@ -1,94 +1,82 @@
 ---
-type Img = { src: string; alt?: string; width?: number; height?: number };
-type Labels = {
-  checkin: string;
-  checkout: string;
-  guests: string;
-  search: string;
-};
+ type Img = { src: string; alt?: string; width?: number; height?: number };
+ type Labels = {
+   checkin: string;
+   checkout: string;
+   guests: string;
+   search: string;
+ };
 
-type Props = {
-  images?: Img[];
-  locale?: string;
-  searchPath?: string;
-  labels?: Labels;
-  brandColor?: string;
-  autoplay?: boolean; // también controla autoplay del video
-  intervalMs?: number;
-  preloadFirstImage?: boolean;
-  showSearch?: boolean;
-  youtubeUrl?: string; // 👈 NUEVO: URL o ID de YouTube
-};
+ type Props = {
+   images?: Img[];
+   locale?: string;
+   searchPath?: string;
+   labels?: Labels;
+   brandColor?: string;
+   autoplay?: boolean; // también controla autoplay del video
+   intervalMs?: number;
+   preloadFirstImage?: boolean;
+   showSearch?: boolean;
+   youtubeUrl?: string; // URL o ID de YouTube
+  preferSoundAutoplay?: boolean; // intenta autoplay con sonido si el navegador lo permite
+ };
 
-const {
-  images = [],
-  locale = "en",
-  searchPath = `/${locale}/all-properties/`,
-  labels = {
-    checkin: "Check-in",
-    checkout: "Check-out",
-    guests: "Guests",
-    search: "Search",
-  },
-  brandColor = "#C76B4E",
-  autoplay = true,
-  intervalMs = 6000,
-  preloadFirstImage = true,
-  showSearch = false,
-  youtubeUrl, // 👈 NUEVO
-} = Astro.props as Props;
+ const {
+   images = [],
+   locale = "en",
+   searchPath = `/${locale}/all-properties/`,
+   labels = {
+     checkin: "Check-in",
+     checkout: "Check-out",
+     guests: "Guests",
+     search: "Search",
+   },
+   brandColor = "#C76B4E",
+   autoplay = true,
+   intervalMs = 6000,
+   preloadFirstImage = true,
+   showSearch = false,
+   youtubeUrl,
+   preferSoundAutoplay = false,
+ } = Astro.props as Props;
 
-const FALLBACK: Img[] = [
-  {
-    src: "https://fincacasiana.com/wp-content/uploads/2025/03/cabana-1-de-finca-casiana--scaled.jpg.webp",
-  },
-  {
-    src: "https://fincacasiana.com/wp-content/uploads/2025/03/pileta-finca-casiana-scaled.jpg.webp",
-  },
-  {
-    src: "https://fincacasiana.com/wp-content/uploads/2025/03/parque-verde-finca-casiana-scaled.jpg.webp",
-  },
-  {
-    src: "https://fincacasiana.com/wp-content/uploads/2025/03/dormitorio-mesa-de-luz-cabana-5-finca-casiana-scaled.jpg.webp",
-  },
-  {
-    src: "https://fincacasiana.com/wp-content/uploads/2025/03/mates-pileta-finca-casiana-scaled.jpg.webp",
-  },
-  {
-    src: "https://fincacasiana.com/wp-content/uploads/2025/03/Canchas-futbol-finca-casiana-scaled.jpg.webp",
-  },
-];
-const imgs = images.length ? images : FALLBACK;
+ const FALLBACK: Img[] = [
+   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/cabana-1-de-finca-casiana--scaled.jpg.webp" },
+   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/pileta-finca-casiana-scaled.jpg.webp" },
+   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/parque-verde-finca-casiana-scaled.jpg.webp" },
+   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/dormitorio-mesa-de-luz-cabana-5-finca-casiana-scaled.jpg.webp" },
+   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/mates-pileta-finca-casiana-scaled.jpg.webp" },
+   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/Canchas-futbol-finca-casiana-scaled.jpg.webp" },
+ ];
+ const imgs = images.length ? images : FALLBACK;
 
-const id =
-  (globalThis as any).crypto?.randomUUID?.() ??
-  `hero-${Math.random().toString(36).slice(2)}`;
+ const id =
+   (globalThis as any).crypto?.randomUUID?.() ??
+   `hero-${Math.random().toString(36).slice(2)}`;
 
-const defaultSearchUrl = `${searchPath}?adults=1&children=0&infants=0&pets=0`;
+ const defaultSearchUrl = `${searchPath}?adults=1&children=0&infants=0&pets=0`;
 
-// 👇 helper para sacar el ID desde URL o recibir el ID directo
-const getYouTubeId = (v?: string | null) => {
-  if (!v) return null;
-  if (/^[\w-]{11}$/.test(v)) return v;
-  try {
-    const u = new URL(v);
-    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
-    const param = u.searchParams.get("v");
-    if (param) return param;
-    const m = u.pathname.match(/\/embed\/([\w-]{11})/);
-    if (m) return m[1];
-  } catch {}
-  return null;
-};
-const YT_ID = getYouTubeId(youtubeUrl);
-const HAS_VIDEO = !!YT_ID;
+ // helper para sacar el ID desde URL o recibir el ID directo
+ const getYouTubeId = (v?: string | null) => {
+   if (!v) return null;
+   if (/^[\w-]{11}$/.test(v)) return v;
+   try {
+     const u = new URL(v);
+     if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
+     const param = u.searchParams.get("v");
+     if (param) return param;
+     const m = u.pathname.match(/\/embed\/([\w-]{11})/);
+     if (m) return m[1];
+   } catch {}
+   return null;
+ };
+ const YT_ID = getYouTubeId(youtubeUrl);
+ const HAS_VIDEO = !!YT_ID;
 ---
 
-{
-  !HAS_VIDEO && preloadFirstImage && imgs?.[0]?.src && (
-    <link rel="preload" as="image" href={imgs[0].src} />
-  )
-}
+{ !HAS_VIDEO && preloadFirstImage && imgs?.[0]?.src && (
+  <link rel="preload" as="image" href={imgs[0].src} />
+)}
 
 <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
 
@@ -101,28 +89,27 @@ const HAS_VIDEO = !!YT_ID;
   itemscope
   itemtype="https://schema.org/ImageGallery"
 >
-  <div
-    class="rail"
-    role="region"
-    aria-roledescription="carousel"
-    style="overflow:hidden; border-radius:10px;"
-  >
+  <div class="rail" role="region" aria-roledescription="carousel" style="overflow:hidden; border-radius:10px;">
     <div class="slides" aria-live="polite" tabindex="0">
       {
         HAS_VIDEO ? (
-          // 👇 VIDEO DE YOUTUBE
+          // VIDEO DE YOUTUBE
           <div class="video-wrap" data-video>
             <iframe
               class="video-iframe"
-              src={`https://www.youtube-nocookie.com/embed/${YT_ID}?autoplay=${autoplay ? 1 : 0}&mute=1&playsinline=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${YT_ID}&fs=0&disablekb=1&iv_load_policy=3`}
+              src={`https://www.youtube-nocookie.com/embed/${YT_ID}?autoplay=${autoplay ? 1 : 0}&mute=${preferSoundAutoplay ? 0 : 1}&playsinline=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${YT_ID}&fs=0&disablekb=1&iv_load_policy=3&enablejsapi=1`}
               title="Video"
               allow="autoplay; encrypted-media; picture-in-picture"
               referrerpolicy="strict-origin-when-cross-origin"
               tabindex="-1"
             />
+            <!-- Botón para habilitar sonido -->
+            <button class="unmute" data-unmute aria-label="Activar sonido">
+              🔊 Activar sonido
+            </button>
           </div>
         ) : (
-          // 👇 SLIDES DE IMÁGENES (sin cambios)
+          // SLIDES DE IMÁGENES
           imgs.map((img, i) => (
             <figure
               class={`slide aos-init ${i === 0 ? "active aos-animate" : ""}`}
@@ -148,42 +135,38 @@ const HAS_VIDEO = !!YT_ID;
     </div>
   </div>
 
-  {
-    showSearch && (
-      <div class="search-wrap">
-        <form class="searchbar" data-form>
-          <label class="field">
-            <span>{labels.checkin}</span>
-            <input type="date" name="start" inputmode="none" />
-          </label>
-          <label class="field">
-            <span>{labels.checkout}</span>
-            <input type="date" name="end" inputmode="none" />
-          </label>
-          <label class="field">
-            <span>{labels.guests}</span>
-            <select name="adults" aria-label={labels.guests}>
-              <option value="1">1 adult</option>
-              <option value="2">2 adults</option>
-              <option value="3">3 adults</option>
-              <option value="4">4 adults</option>
-              <option value="5">5 adults</option>
-              <option value="6">6 adults</option>
-            </select>
-          </label>
-          <a class="cta" href={defaultSearchUrl} data-search>
-            {labels.search}
-            <span class="cta-arrow" aria-hidden="true">
-              ›
-            </span>
-          </a>
-        </form>
-        <a class="cta mobile" href={defaultSearchUrl} data-search>
+  { showSearch && (
+    <div class="search-wrap">
+      <form class="searchbar" data-form>
+        <label class="field">
+          <span>{labels.checkin}</span>
+          <input type="date" name="start" inputmode="none" />
+        </label>
+        <label class="field">
+          <span>{labels.checkout}</span>
+          <input type="date" name="end" inputmode="none" />
+        </label>
+        <label class="field">
+          <span>{labels.guests}</span>
+          <select name="adults" aria-label={labels.guests}>
+            <option value="1">1 adult</option>
+            <option value="2">2 adults</option>
+            <option value="3">3 adults</option>
+            <option value="4">4 adults</option>
+            <option value="5">5 adults</option>
+            <option value="6">6 adults</option>
+          </select>
+        </label>
+        <a class="cta" href={defaultSearchUrl} data-search>
           {labels.search}
+          <span class="cta-arrow" aria-hidden="true">›</span>
         </a>
-      </div>
-    )
-  }
+      </form>
+      <a class="cta mobile" href={defaultSearchUrl} data-search>
+        {labels.search}
+      </a>
+    </div>
+  ) }
 </section>
 
 <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>
@@ -198,35 +181,61 @@ const HAS_VIDEO = !!YT_ID;
   const HAS_VIDEO = root.dataset.hasVideo === "true";
   if (!HAS_VIDEO) return; // si hay carrusel, salimos
 
-  const wrap = root.querySelector(".video-wrap");
-  const iframe = wrap?.querySelector(".video-iframe");
+  const wrap = root.querySelector('.video-wrap');
+  const iframe = wrap?.querySelector('.video-iframe');
+  const btn = wrap?.querySelector('[data-unmute]');
   if (!wrap || !iframe) return;
 
   function fitYT() {
     const { width: W, height: H } = wrap.getBoundingClientRect();
     if (!W || !H) return;
-
     const Rv = 16/9, Rc = W/H;
-    if (Rc > Rv) {           // contenedor más ancho
-      iframe.style.width  = W + "px";
-      iframe.style.height = (W / Rv) + "px";
-    } else {                 // contenedor más alto
-      iframe.style.width  = (H * Rv) + "px";
-      iframe.style.height = H + "px";
+    if (Rc > Rv) { // contenedor más ancho
+      iframe.style.width  = W + 'px';
+      iframe.style.height = (W / Rv) + 'px';
+    } else { // contenedor más alto
+      iframe.style.width  = (H * Rv) + 'px';
+      iframe.style.height = H + 'px';
     }
-    iframe.style.position = "absolute";
-    iframe.style.top = "50%";
-    iframe.style.left = "50%";
-    iframe.style.transform = "translate(-50%, -50%)";
+    iframe.style.position = 'absolute';
+    iframe.style.top = '50%';
+    iframe.style.left = '50%';
+    iframe.style.transform = 'translate(-50%, -50%)';
   }
+
+  function yt(cmd, args = []) {
+    iframe.contentWindow?.postMessage(JSON.stringify({
+      event: 'command',
+      func: cmd,
+      args
+    }), '*');
+  }
+
+  // Si el navegador bloquea sonido en autoplay, desmutear/aplicar play en el primer gesto en cualquier parte de la página
+  function firstGesture() {
+    yt('unMute');
+    yt('setVolume', [100]);
+    yt('playVideo');
+    btn?.classList.add('is-hidden');
+  }
+  ['pointerdown','touchstart','keydown','wheel'].forEach(evt => {
+    window.addEventListener(evt, firstGesture, { once: true, passive: true });
+  });
+
+  // Habilitar sonido tras gesto del usuario
+  btn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    yt('unMute');
+    yt('setVolume', [100]);
+    yt('playVideo');
+    btn.classList.add('is-hidden');
+  });
 
   fitYT();
   new ResizeObserver(fitYT).observe(wrap);
-  addEventListener("resize", fitYT);
+  addEventListener('resize', fitYT);
 })();
 </script>
-
-
 
 <style>
   .hero {
@@ -235,194 +244,95 @@ const HAS_VIDEO = !!YT_ID;
     border-radius: 20px;
     background: #000;
 
+    /* 30% más angosto en desktop */
+    width: 70%;
+    margin: 0 auto;
+
     /* Más compacto para eliminar blanco abajo */
     height: clamp(220px, 38vw, 420px);
     min-height: 220px;
     max-height: 420px;
-    margin: 0; /* por si tu tema da margen a <section> */
+  }
+
+  @media (max-width: 1024px) {
+    .hero { width: 100%; }
   }
 
   /* contenedor */
-  .rail {
-    height: 100%;
-    position: relative;
-  }
+  .rail { height: 100%; position: relative; }
 
   /* Slides superpuestos con fade (AOS) + Ken Burns */
-  .slides {
-    position: relative;
-    height: 100%;
-  }
-  .slide {
-    position: absolute;
-    inset: 0;
-    margin: 0;
-  }
-  .rail {
-    height: 100%;
-    position: relative;
-  }
-  .slides {
-    position: relative;
-    height: 100%;
-  }
+  .slides { position: relative; height: 100%; }
+  .slide { position: absolute; inset: 0; margin: 0; }
 
   /* Video full-bleed y sin hover */
-  .video-wrap {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: #000;
-}
-.video-iframe {
-  position: absolute;
-  border: 0;
-  display: block;
-  pointer-events: none; /* no título ni menús al hover */
-  /* tamaño y centrado los setea JS */
-}
-
-  /* Slides + Ken Burns (igual que tenías) */
-  .slide {
+  .video-wrap { position: absolute; inset: 0; overflow: hidden; background: #000; }
+  .video-iframe {
     position: absolute;
-    inset: 0;
-    margin: 0;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-    will-change: opacity;
-  }
-  .slide.active {
-    opacity: 1;
-    z-index: 2;
-  }
-  .slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    border: 0;
     display: block;
+    pointer-events: none; /* no título ni menús al hover */
+  }
+
+  /* Botón activar sonido */
+  .unmute {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    z-index: 5;
+    pointer-events: auto;
+    background: rgba(0,0,0,.6);
+    color: #fff;
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    transition: opacity .2s ease;
+  }
+  .unmute:hover { filter: brightness(1.1); }
+  .unmute.is-hidden { opacity: 0; pointer-events: none; }
+
+  /* Slides + Ken Burns */
+  .slide { opacity: 0; transition: opacity .8s ease; will-change: opacity; }
+  .slide.active { opacity: 1; z-index: 2; }
+  .slide img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
     transform-origin: var(--ox, 50%) var(--oy, 50%);
     animation: kenIn var(--ken, 8000ms) ease-out forwards;
   }
-  .slide:nth-child(1) {
-    --ox: 20%;
-    --oy: 20%;
-  }
-  .slide:nth-child(2) {
-    --ox: 80%;
-    --oy: 20%;
-  }
-  .slide:nth-child(3) {
-    --ox: 50%;
-    --oy: 50%;
-  }
-  .slide:nth-child(4) {
-    --ox: 20%;
-    --oy: 80%;
-  }
-  .slide:nth-child(5) {
-    --ox: 80%;
-    --oy: 80%;
-  }
-  .slide:nth-child(6) {
-    --ox: 50%;
-    --oy: 30%;
-  }
-  @keyframes kenIn {
-    from {
-      transform: scale(1.08);
-    }
-    to {
-      transform: scale(1);
-    }
-  }
-  .slide[data-aos].aos-init {
-    opacity: 0;
-    transform: none;
-  }
-  .slide[data-aos].aos-animate {
-    opacity: 1;
-    transform: none;
-  }
+  .slide:nth-child(1) { --ox: 20%; --oy: 20%; }
+  .slide:nth-child(2) { --ox: 80%; --oy: 20%; }
+  .slide:nth-child(3) { --ox: 50%; --oy: 50%; }
+  .slide:nth-child(4) { --ox: 20%; --oy: 80%; }
+  .slide:nth-child(5) { --ox: 80%; --oy: 80%; }
+  .slide:nth-child(6) { --ox: 50%; --oy: 30%; }
+  @keyframes kenIn { from { transform: scale(1.08); } to { transform: scale(1); } }
+  .slide[data-aos].aos-init { opacity: 0; transform: none; }
+  .slide[data-aos].aos-animate { opacity: 1; transform: none; }
 
-  /* Buscador (igual) */
-  .search-wrap {
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: end center;
-    padding: 0 16px 16px;
-  }
+  /* Buscador */
+  .search-wrap { pointer-events: none; position: absolute; inset: 0; display: grid; place-items: end center; padding: 0 16px 16px; }
   .searchbar {
-    pointer-events: auto;
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    background: #fff;
-    border-radius: 14px;
-    box-shadow:
-      0 16px 30px rgba(0, 0, 0, 0.18),
-      0 4px 10px rgba(0, 0, 0, 0.06);
+    pointer-events: auto; display: flex; align-items: stretch; gap: 0;
+    background: #fff; border-radius: 14px; box-shadow: 0 16px 30px rgba(0,0,0,.18), 0 4px 10px rgba(0,0,0,.06);
     overflow: hidden;
   }
-  .searchbar .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px 18px;
-    min-width: 220px;
-  }
-  .searchbar .field + .field {
-    border-left: 1px solid #ece8e6;
-  }
-  .field span {
-    font-size: 12px;
-    color: #7a6e66;
-  }
-  .field input,
-  .field select {
-    border: 1px solid #e6e2df;
-    border-radius: 10px;
-    padding: 10px 12px;
-    font: inherit;
-  }
-  .cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 28px;
-    background: var(--brand);
-    color: #fff;
-    text-decoration: none;
-    font-weight: 600;
-    min-width: 210px;
-  }
-  .cta:hover {
-    filter: brightness(0.97);
-  }
-  .cta-arrow {
-    margin-left: 10px;
-    font-size: 18px;
-    line-height: 1;
-  }
-  .cta.mobile {
-    display: none;
-  }
+  .searchbar .field { display: flex; flex-direction: column; gap: 6px; padding: 12px 18px; min-width: 220px; }
+  .searchbar .field + .field { border-left: 1px solid #ece8e6; }
+  .field span { font-size: 12px; color: #7a6e66; }
+  .field input, .field select { border: 1px solid #e6e2df; border-radius: 10px; padding: 10px 12px; font: inherit; }
+  .cta { display: inline-flex; align-items: center; justify-content: center; padding: 0 28px; background: var(--brand); color: #fff; text-decoration: none; font-weight: 600; min-width: 210px; }
+  .cta:hover { filter: brightness(.97); }
+  .cta-arrow { margin-left: 10px; font-size: 18px; line-height: 1; }
+  .cta.mobile { display: none; }
+
   @media (max-width: 768px) {
-    .hero {
-      height: clamp(200px, 52vw, 360px);
-    }
-    .searchbar {
-      display: none;
-    }
+    .hero { height: clamp(200px, 52vw, 360px); }
+    .searchbar { display: none; }
     .cta.mobile {
-      display: inline-flex;
-      background: var(--brand);
-      color: #fff;
-      font-weight: 600;
-      padding: 10px 18px;
-      border-radius: 12px;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+      display: inline-flex; background: var(--brand); color: #fff; font-weight: 600; padding: 10px 18px; border-radius: 12px; box-shadow: 0 12px 24px rgba(0,0,0,.18);
     }
   }
 </style>

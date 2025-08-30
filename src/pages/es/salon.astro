@@ -2,14 +2,28 @@
 import Base from "../../layouts/Base.astro";
 import { getDict, type Locale } from "../../i18n/config";
 import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+import SimpleGallery from "../../components/SimpleGallery.astro";
+import { GALLERY_DATA } from "../../lib/gallery-data";
 
 const { lang } = Astro.params as { lang: Locale };
 const t = getDict(lang);
 
+const items = Object.values(GALLERY_DATA)
+  .flat()
+  .filter(a => a.alt === "salon")
+  .map(({ imagen, width, height, alt, caption }) => ({
+    imagen,
+    width,
+    height,
+    alt: alt ?? caption, // opcional
+  }));
 ---
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
-    
+    <section class="mt-[5em]">
+      <div class="max-w-[100px] mx-auto"></div>
+      <SimpleGallery items={items} />
+    </section>
   </main>
 </Base>
