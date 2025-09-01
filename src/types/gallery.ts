@@ -23,6 +23,13 @@ export interface ImageItem {
   model?: string;
 }
 
+export interface SimpleImage {
+  src: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+}
+
 /** Mapa { categoría -> lista de imágenes } */
 export type GalleryData = Record<Categoria, ImageItem[]>;
 

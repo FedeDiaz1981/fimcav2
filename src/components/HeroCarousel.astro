@@ -1,81 +1,99 @@
 ---
- type Img = { src: string; alt?: string; width?: number; height?: number };
- type Labels = {
-   checkin: string;
-   checkout: string;
-   guests: string;
-   search: string;
- };
+type Img = { src: string; alt?: string; width?: number; height?: number };
+type Labels = {
+  checkin: string;
+  checkout: string;
+  guests: string;
+  search: string;
+};
 
- type Props = {
-   images?: Img[];
-   locale?: string;
-   searchPath?: string;
-   labels?: Labels;
-   brandColor?: string;
-   autoplay?: boolean; // también controla autoplay del video
-   intervalMs?: number;
-   preloadFirstImage?: boolean;
-   showSearch?: boolean;
-   youtubeUrl?: string; // URL o ID de YouTube
+type Props = {
+  images?: Img[];
+  locale?: string;
+  searchPath?: string;
+  labels?: Labels;
+  brandColor?: string;
+  autoplay?: boolean; // también controla autoplay del video
+  intervalMs?: number;
+  preloadFirstImage?: boolean;
+  showSearch?: boolean;
+  youtubeUrl?: string; // URL o ID de YouTube
   preferSoundAutoplay?: boolean; // intenta autoplay con sonido si el navegador lo permite
- };
 
- const {
-   images = [],
-   locale = "en",
-   searchPath = `/${locale}/all-properties/`,
-   labels = {
-     checkin: "Check-in",
-     checkout: "Check-out",
-     guests: "Guests",
-     search: "Search",
-   },
-   brandColor = "#C76B4E",
-   autoplay = true,
-   intervalMs = 6000,
-   preloadFirstImage = true,
-   showSearch = false,
-   youtubeUrl,
-   preferSoundAutoplay = false,
- } = Astro.props as Props;
+  // NUEVO: soporte MP4 local
+  mp4Src?: string;       // ruta al mp4 dentro de /public (e.g. "/hero.mp4")
+  posterSrc?: string;    // imagen de poster opcional
+  loopVideo?: boolean;   // por defecto true
+};
 
- const FALLBACK: Img[] = [
-   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/cabana-1-de-finca-casiana--scaled.jpg.webp" },
-   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/pileta-finca-casiana-scaled.jpg.webp" },
-   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/parque-verde-finca-casiana-scaled.jpg.webp" },
-   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/dormitorio-mesa-de-luz-cabana-5-finca-casiana-scaled.jpg.webp" },
-   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/mates-pileta-finca-casiana-scaled.jpg.webp" },
-   { src: "https://fincacasiana.com/wp-content/uploads/2025/03/Canchas-futbol-finca-casiana-scaled.jpg.webp" },
- ];
- const imgs = images.length ? images : FALLBACK;
+const {
+  images = [],
+  locale = "en",
+  searchPath = `/${locale}/all-properties/`,
+  labels = {
+    checkin: "Check-in",
+    checkout: "Check-out",
+    guests: "Guests",
+    search: "Search",
+  },
+  brandColor = "#C76B4E",
+  autoplay = true,
+  intervalMs = 6000,
+  preloadFirstImage = true,
+  showSearch = false,
+  youtubeUrl,
+  preferSoundAutoplay = false,
 
- const id =
-   (globalThis as any).crypto?.randomUUID?.() ??
-   `hero-${Math.random().toString(36).slice(2)}`;
+  // NUEVO
+  mp4Src,
+  posterSrc,
+  loopVideo = true,
+} = Astro.props as Props;
 
- const defaultSearchUrl = `${searchPath}?adults=1&children=0&infants=0&pets=0`;
+const FALLBACK: Img[] = [
+  { src: "https://fincacasiana.com/wp-content/uploads/2025/03/cabana-1-de-finca-casiana--scaled.jpg.webp" },
+  { src: "https://fincacasiana.com/wp-content/uploads/2025/03/pileta-finca-casiana-scaled.jpg.webp" },
+  { src: "https://fincacasiana.com/wp-content/uploads/2025/03/parque-verde-finca-casiana-scaled.jpg.webp" },
+  { src: "https://fincacasiana.com/wp-content/uploads/2025/03/dormitorio-mesa-de-luz-cabana-5-finca-casiana-scaled.jpg.webp" },
+  { src: "https://fincacasiana.com/wp-content/uploads/2025/03/mates-pileta-finca-casiana-scaled.jpg.webp" },
+  { src: "https://fincacasiana.com/wp-content/uploads/2025/03/Canchas-futbol-finca-casiana-scaled.jpg.webp" },
+];
+const imgs = images.length ? images : FALLBACK;
 
- // helper para sacar el ID desde URL o recibir el ID directo
- const getYouTubeId = (v?: string | null) => {
-   if (!v) return null;
-   if (/^[\w-]{11}$/.test(v)) return v;
-   try {
-     const u = new URL(v);
-     if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
-     const param = u.searchParams.get("v");
-     if (param) return param;
-     const m = u.pathname.match(/\/embed\/([\w-]{11})/);
-     if (m) return m[1];
-   } catch {}
-   return null;
- };
- const YT_ID = getYouTubeId(youtubeUrl);
- const HAS_VIDEO = !!YT_ID;
+const id =
+  (globalThis as any).crypto?.randomUUID?.() ??
+  `hero-${Math.random().toString(36).slice(2)}`;
+
+const defaultSearchUrl = `${searchPath}?adults=1&children=0&infants=0&pets=0`;
+
+// helper para sacar el ID desde URL o recibir el ID directo
+const getYouTubeId = (v?: string | null) => {
+  if (!v) return null;
+  if (/^[\w-]{11}$/.test(v)) return v;
+  try {
+    const u = new URL(v);
+    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
+    const param = u.searchParams.get("v");
+    if (param) return param;
+    const m = u.pathname.match(/\/embed\/([\w-]{11})/);
+    if (m) return m[1];
+  } catch {}
+  return null;
+};
+const YT_ID = getYouTubeId(youtubeUrl);
+
+// NUEVO: prioridad de medios -> YouTube > MP4 > imágenes
+const HAS_YT = !!YT_ID;
+const HAS_MP4 = !!mp4Src;
+const HAS_MEDIA = HAS_YT || HAS_MP4;
+const MEDIA_TYPE = HAS_YT ? "yt" : HAS_MP4 ? "mp4" : "none";
 ---
 
-{ !HAS_VIDEO && preloadFirstImage && imgs?.[0]?.src && (
+{ !HAS_MEDIA && preloadFirstImage && imgs?.[0]?.src && (
   <link rel="preload" as="image" href={imgs[0].src} />
+)}
+{ HAS_MP4 && mp4Src && autoplay && (
+  <link rel="preload" as="video" href={mp4Src} />
 )}
 
 <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
@@ -84,7 +102,11 @@
   class="hero"
   style={`--brand:${brandColor}`}
   data-hero={id}
-  data-has-video={String(HAS_VIDEO)}
+  data-has-video={String(HAS_MEDIA)}
+  data-video-type={MEDIA_TYPE}
+  data-autoplay={String(autoplay)}
+  data-prefer-sound={String(preferSoundAutoplay)}
+  data-loop={String(loopVideo)}
   aria-label="Hero"
   itemscope
   itemtype="https://schema.org/ImageGallery"
@@ -92,7 +114,7 @@
   <div class="rail" role="region" aria-roledescription="carousel" style="overflow:hidden; border-radius:10px;">
     <div class="slides" aria-live="polite" tabindex="0">
       {
-        HAS_VIDEO ? (
+        HAS_YT ? (
           // VIDEO DE YOUTUBE
           <div class="video-wrap" data-video>
             <iframe
@@ -103,10 +125,23 @@
               referrerpolicy="strict-origin-when-cross-origin"
               tabindex="-1"
             />
-            <!-- Botón para habilitar sonido -->
-            <button class="unmute" data-unmute aria-label="Activar sonido">
-              🔊 Activar sonido
-            </button>
+            <button class="unmute" data-unmute aria-label="Activar sonido">🔊 Activar sonido</button>
+          </div>
+        ) : HAS_MP4 ? (
+          // NUEVO: VIDEO MP4 LOCAL
+          <div class="video-wrap" data-video>
+            <video
+              class="video-el"
+              src={mp4Src}
+              poster={posterSrc}
+              playsinline
+              muted={!preferSoundAutoplay}
+              autoplay={autoplay}
+              loop={loopVideo}
+              preload="metadata"
+              tabindex="-1"
+            ></video>
+            <button class="unmute" data-unmute aria-label="Activar sonido">🔊 Activar sonido</button>
           </div>
         ) : (
           // SLIDES DE IMÁGENES
@@ -178,62 +213,127 @@
   const root = document.querySelector(`[data-hero="${HERO_ID}"]`);
   if (!root) return;
 
-  const HAS_VIDEO = root.dataset.hasVideo === "true";
-  if (!HAS_VIDEO) return; // si hay carrusel, salimos
+  const HAS_MEDIA = root.dataset.hasVideo === "true";
+  if (!HAS_MEDIA) return; // si hay carrusel, salimos
+
+  const TYPE = root.dataset.videoType; // "yt" | "mp4"
+  const AUTOPLAY = root.dataset.autoplay === "true";
+  const PREFER_SOUND = root.dataset.preferSound === "true";
+  const SHOULD_LOOP = root.dataset.loop === "true";
 
   const wrap = root.querySelector('.video-wrap');
-  const iframe = wrap?.querySelector('.video-iframe');
   const btn = wrap?.querySelector('[data-unmute]');
-  if (!wrap || !iframe) return;
+  if (!wrap) return;
 
-  function fitYT() {
-    const { width: W, height: H } = wrap.getBoundingClientRect();
-    if (!W || !H) return;
-    const Rv = 16/9, Rc = W/H;
-    if (Rc > Rv) { // contenedor más ancho
-      iframe.style.width  = W + 'px';
-      iframe.style.height = (W / Rv) + 'px';
-    } else { // contenedor más alto
-      iframe.style.width  = (H * Rv) + 'px';
-      iframe.style.height = H + 'px';
+  if (TYPE === 'yt') {
+    const iframe = wrap.querySelector('.video-iframe');
+    if (!iframe) return;
+
+    function fitYT() {
+      const { width: W, height: H } = wrap.getBoundingClientRect();
+      if (!W || !H) return;
+      const Rv = 16/9, Rc = W/H;
+      if (Rc > Rv) { // contenedor más ancho
+        iframe.style.width  = W + 'px';
+        iframe.style.height = (W / Rv) + 'px';
+      } else { // contenedor más alto
+        iframe.style.width  = (H * Rv) + 'px';
+        iframe.style.height = H + 'px';
+      }
+      iframe.style.position = 'absolute';
+      iframe.style.top = '50%';
+      iframe.style.left = '50%';
+      iframe.style.transform = 'translate(-50%, -50%)';
     }
-    iframe.style.position = 'absolute';
-    iframe.style.top = '50%';
-    iframe.style.left = '50%';
-    iframe.style.transform = 'translate(-50%, -50%)';
+
+    function yt(cmd, args = []) {
+      iframe.contentWindow?.postMessage(JSON.stringify({
+        event: 'command',
+        func: cmd,
+        args
+      }), '*');
+    }
+
+    function firstGesture() {
+      yt('unMute');
+      yt('setVolume', [100]);
+      yt('playVideo');
+      btn?.classList.add('is-hidden');
+    }
+    ['pointerdown','touchstart','keydown','wheel'].forEach(evt => {
+      window.addEventListener(evt, firstGesture, { once: true, passive: true });
+    });
+
+    btn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      yt('unMute');
+      yt('setVolume', [100]);
+      yt('playVideo');
+      btn.classList.add('is-hidden');
+    });
+
+    fitYT();
+    new ResizeObserver(fitYT).observe(wrap);
+    addEventListener('resize', fitYT);
+
+    // Pausar cuando no esté visible
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) yt('playVideo'); else yt('pauseVideo');
+      });
+    }, { threshold: 0.15 });
+    io.observe(wrap);
+    return;
   }
 
-  function yt(cmd, args = []) {
-    iframe.contentWindow?.postMessage(JSON.stringify({
-      event: 'command',
-      func: cmd,
-      args
-    }), '*');
+  // ---- MP4 LOCAL ----
+  const video = wrap.querySelector('video.video-el');
+  if (!video) return;
+
+  // aseguro loop según prop
+  video.loop = SHOULD_LOOP;
+
+  async function tryAutoplay() {
+    if (!AUTOPLAY) return;
+    try {
+      // si se prefiere sonido, intento sin mute
+      video.muted = !PREFER_SOUND ? true : false;
+      if (!video.muted) video.volume = 1.0;
+      await video.play();
+    } catch {
+      // fallback: muted autoplay
+      try {
+        video.muted = true;
+        await video.play();
+      } catch { /* nada */ }
+    }
   }
 
-  // Si el navegador bloquea sonido en autoplay, desmutear/aplicar play en el primer gesto en cualquier parte de la página
   function firstGesture() {
-    yt('unMute');
-    yt('setVolume', [100]);
-    yt('playVideo');
+    video.muted = false;
+    video.volume = 1.0;
+    video.play().catch(() => {});
     btn?.classList.add('is-hidden');
   }
+
   ['pointerdown','touchstart','keydown','wheel'].forEach(evt => {
     window.addEventListener(evt, firstGesture, { once: true, passive: true });
   });
 
-  // Habilitar sonido tras gesto del usuario
   btn?.addEventListener('click', (e) => {
     e.preventDefault();
-    yt('unMute');
-    yt('setVolume', [100]);
-    yt('playVideo');
-    btn.classList.add('is-hidden');
+    firstGesture();
   });
 
-  fitYT();
-  new ResizeObserver(fitYT).observe(wrap);
-  addEventListener('resize', fitYT);
+  // Pausar/Reanudar según visibilidad
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) video.play().catch(() => {}); else video.pause();
+    });
+  }, { threshold: 0.15 });
+  io.observe(wrap);
+
+  tryAutoplay();
 })();
 </script>
 
@@ -267,11 +367,19 @@
 
   /* Video full-bleed y sin hover */
   .video-wrap { position: absolute; inset: 0; overflow: hidden; background: #000; }
-  .video-iframe {
+  .video-iframe,
+  .video-el {
     position: absolute;
-    border: 0;
     display: block;
-    pointer-events: none; /* no título ni menús al hover */
+    border: 0;
+    pointer-events: none; /* sin controles nativos */
+  }
+  /* MP4 ocupa todo el contenedor, recorta como background cover */
+  .video-el {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   /* Botón activar sonido */

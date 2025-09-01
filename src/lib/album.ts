@@ -43,7 +43,6 @@ export const ALBUM: AlbumItem[] = Object.entries(modules)
   .map(([path, mod]) => {
     const model: "Confort" | "Familiar" = path.includes("/Confort/") ? "Confort" : "Familiar";
     const meta = toMeta(mod);
-    console.log("cap: " + parentFolder(path, model) + "capacity: " + model === "Confort" ? 3 : 6 + "model: " + model);
     return {
       imagen: meta.src,                 // <-- URL string final
       width: meta.width,                // (opcional)

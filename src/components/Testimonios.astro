@@ -1,0 +1,141 @@
+---
+export interface Testimonio {
+  nombre: string;
+  detalle: string;
+  estrellas: number; // 0..5
+}
+
+interface Props {
+  items: Testimonio[];
+  titulo?: string;
+}
+
+const { items = [], titulo = "Testimonios" } = Astro.props as Props;
+
+const clamp = (n: number) => Math.max(0, Math.min(5, Math.floor(n ?? 0)));
+---
+
+<section class="testimonios" aria-label={titulo}>
+  {
+    titulo && (
+      <h2 class="text-4xl font-semibold text-stone-900 text-center hidden">
+        {titulo}
+      </h2>
+    )
+  }
+  <div class="mx-auto mt-2 h-1 w-40 rounded-full hidden" style="background:#C76B4E;">
+  </div>
+  <ul class="grid">
+    {
+      items.map((t) => {
+        const rating = clamp(t.estrellas);
+        const stars = Array.from({ length: 5 }, (_, i) => i < rating);
+        return (
+          <li class="card" aria-label={`Opinión de ${t.nombre}`}>
+            <div class="header">
+              <div class="nombre">{t.nombre}</div>
+              <div
+                class="rating"
+                role="img"
+                aria-label={`Calificación: ${rating} de 5`}
+              >
+                {stars.map((filled) => (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    class={`star ${filled ? "filled" : "empty"}`}
+                  >
+                    <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.782 1.401 8.168L12 18.896l-7.335 3.864 1.401-8.168L.132 9.21l8.2-1.192L12 .587z" />
+                  </svg>
+                ))}
+              </div>
+            </div>
+            <p class="detalle">{t.detalle}</p>
+          </li>
+        );
+      })
+    }
+  </ul>
+</section>
+
+<style>
+  :root {
+    --card-bg: #fff;
+    --card-border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+  }
+  section.testimonios {
+    display: block;
+  }
+  h2 {
+    margin: 0 0 0.75rem;
+    color: var(--text);
+  }
+  ul.grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    padding: 0;
+    margin-top: 2rem;
+    list-style: none;
+  }
+  .card {
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .nombre {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .rating {
+    display: inline-flex;
+    gap: 2px;
+  }
+  .star {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+  .star.filled path {
+    fill: #f59e0b;
+  } /* ámbar */
+  .star.empty path {
+    fill: #e5e7eb;
+  } /* gris claro */
+  .detalle {
+    color: var(--muted);
+    line-height: 1.45;
+    margin: 0;
+    white-space: pre-wrap;
+  }
+</style>
+
+<!--
+USO (ejemplo en una página .astro)
+
+---
+import Testimonios from "../components/Testimonios.astro";
+
+const opiniones = [
+  { nombre: "María Gómez", detalle: "La pasamos bárbaro, la vista es increíble.", estrellas: 5 },
+  { nombre: "Juan Pérez", detalle: "Muy cómodo y tranquilo. Repetiría.", estrellas: 4 },
+  { nombre: "Lucía López", detalle: "Todo bien, aunque me quedé con ganas de más días.", estrellas: 4 },
+  { nombre: "Carlos Ruiz", detalle: "Atención de primera.", estrellas: 5 },
+  { nombre: "Ana Díaz", detalle: "Lugar soñado.", estrellas: 5 },
+];
+---
+
+<Testimonios items={opiniones} titulo="Opiniones de Finca Casiana" />
+
+-->

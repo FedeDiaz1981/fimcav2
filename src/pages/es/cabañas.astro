@@ -19,9 +19,11 @@ import Pl_01 from "../../../public/images/Pl_01.jpg";
 import Pl_02 from "../../../public/images/Pl_02.jpg";
 import Pl_03 from "../../../public/images/Pl_03.jpg";
 
-import logo_d from "../../../public/logo_disc.png"
+import logo_d from "../../../public/logo_disc.png";
 
-import ALBUM, { type AlbumItem } from "../../lib/album"
+import ALBUM, { type AlbumItem } from "../../lib/album";
+
+import HeroCarousel from "../../components/HeroCarousel.astro";
 
 type Categoria = "Interiores" | "Exteriores" | "Parque" | "Pileta";
 
@@ -127,33 +129,39 @@ const toItem = ({ imagen, caption, width, height }: AlbumItem) => ({
 });
 
 // dos arrays
-const confort   = ALBUM.filter(a => a.model === "Confort").map(toItem);
-const noConfort = ALBUM.filter(a => a.model !== "Confort").map(toItem);
+const confort = ALBUM.filter((a) => a.model === "Confort").map(toItem);
+const noConfort = ALBUM.filter((a) => a.model !== "Confort").map(toItem);
 
 // si lo querés en el formato que consume el componente:
-const dataConfort   = { Interiores: confort }   satisfies Partial<Record<Categoria, ImageItem[]>>;
-const dataNoConfort = { Interiores: noConfort } satisfies Partial<Record<Categoria, ImageItem[]>>;
+const dataConfort = { Interiores: confort } satisfies Partial<
+  Record<Categoria, ImageItem[]>
+>;
+const dataNoConfort = { Interiores: noConfort } satisfies Partial<
+  Record<Categoria, ImageItem[]>
+>;
+
+//import video from "../../../public/video_cab.mp4";
 ---
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
     <section class="mt-[5em]">
       <div class="max-w-5xl mx-auto">
-        <CarouselGallery
-          data={data}
-          groupBy="category"
-          reserveUrl="reservas?cabana={{id}}"
-          reserveTarget="_self"
+        <HeroCarousel
+          mp4Src="../../../public/video_cab.mp4"
+          posterSrc=""
+          autoplay
+          preferSoundAutoplay={true}
         />
-
+        
         <h2
-          class="text-3xl md:text-[2.7rem] font-semibold text-stone-900 text-center pt-[5rem]"
+          class="text-3xl md:text-[2.7rem] font-semibold text-stone-900 text-center pt-[5rem] hidden"
         >
           Cabañas equipadas, listas todo el año
         </h2>
-        <p class="mt-3 text-stone-600 text-lg text-center">
-          En Finca Casiana te ofrecemos cabañas equipadas y listas 
-          para recibirte en cualquier época del año.
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          En Finca Casiana te ofrecemos cabañas equipadas y listas para
+          recibirte en cualquier época del año.
         </p>
 
         <!-- Features -->
@@ -161,51 +169,61 @@ const dataNoConfort = { Interiores: noConfort } satisfies Partial<Record<Categor
         <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
           <!-- Naturaleza -->
           <article class="grid grid-cols-[28px_1fr] items-start gap-3">
-            <span class="text-stone-400 text-2xl">
-              🌳
-            </span>
+            <span class="text-stone-400 text-2xl"> 🌳 </span>
             <div>
-              <h3 class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600  font-medium">
+              <h3
+                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+              >
                 Rodeadas de naturaleza y tranquilidad
               </h3>
             </div>
           </article>
 
-           <article class="grid grid-cols-[28px_1fr] items-start gap-3">
-            <span class="text-stone-400 text-2xl">
-              🛏️
-            </span>
+          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+            <span class="text-stone-400 text-2xl"> 🛏️ </span>
             <div>
-              <h3 class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600  font-medium">
+              <h3
+                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+              >
                 Comodidades
               </h3>
-              <p class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2">
-               Aire acondicionado, calefacción, cocina equipada, 
-               ropa de cama, WiFi Gratuito, SMART TV con antena satelital..
+              <p
+                class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2"
+              >
+                Aire acondicionado, calefacción, cocina equipada, ropa de cama,
+                WiFi Gratuito, SMART TV con antena satelital..
               </p>
             </div>
           </article>
           <!-- Accesibilidad -->
           <article class="grid grid-cols-[28px_1fr] items-start gap-3">
             <span class="text-stone-400 mt-1">
-              <img src={logo_d.src} alt="logo discapacidad" class="w-[1.6rem]">
+              <img
+                src={logo_d.src}
+                alt="logo discapacidad"
+                class="w-[1.6rem]"
+              />
             </span>
             <div>
-              <h3 class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium">
+              <h3
+                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+              >
                 Adaptado para personas con movilidad reducida.
               </h3>
             </div>
           </article>
           <!-- Pet Friendly -->
           <article class="grid grid-cols-[28px_1fr] items-start gap-3">
-            <span class="text-stone-400 text-2xl">
-              🐾 
-            </span>
+            <span class="text-stone-400 text-2xl"> 🐾 </span>
             <div>
-              <h3 class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600  font-medium">
-                Alojamiento Pet Friendly 
+              <h3
+                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+              >
+                Alojamiento Pet Friendly
               </h3>
-              <p class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2">
+              <p
+                class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2"
+              >
                 Espacios comunes: Piscina con cerco perimetral, espacios verdes
                 ,cocheras privadas, sector de parrilla y horno a leña, cancha de
                 fútbol y nuestro salon multiespacio (opcional para eventos
@@ -213,8 +231,6 @@ const dataNoConfort = { Interiores: noConfort } satisfies Partial<Record<Categor
               </p>
             </div>
           </article>
-
-          
         </div>
 
         <h2
@@ -231,7 +247,11 @@ const dataNoConfort = { Interiores: noConfort } satisfies Partial<Record<Categor
           CABAÑA FAMILIAR PARA 5 O 6 PERSONAS
         </h2>
 
-        <CarouselGallery data={dataNoConfort} intervalMs={3800} groupBy="cabin" />
+        <CarouselGallery
+          data={dataNoConfort}
+          intervalMs={3800}
+          groupBy="cabin"
+        />
 
         <div class="my-12 grid gap-3 md:grid-cols-3">
           <div class="flex items-center gap-3">

@@ -40,6 +40,8 @@ import Pl_03 from "../../../public/images/Pl_03.jpg";
 import CarouselGallery from "../../components/CarouselGallery.astro";
 import type { ImageItem, GalleryData } from "../../types/gallery"; // si separaste los tipos
 
+import logo from "../../../public/Logo-03.png";
+
 const Interiores: ImageItem[] = [
   {
     imagen: I_01.src,
@@ -193,17 +195,19 @@ const cabs = [{ id: "1" }, { id: "2" }, { id: "3" }];
     <section class="mt-12 px-4 mb-12 pb-12">
       <div class="max-w-3xl mx-auto text-center">
         <h3
-          class="text-xl font-semibold uppercase tracking-widest text-stone-500"
+          class="text-2xl font-semibold uppercase tracking-widest text-stone-500 mx-[auto] mb-4"
         >
           Bienvenido a
         </h3>
 
-        <h1 class="mt-2 text-4xl md:text-6xl font-semibold text-stone-900">
+        <!-- <h1 class="mt-2 text-4xl md:text-6xl font-semibold text-stone-900">
           Finca Casiana
-        </h1>
+        </h1> -->
+
+        <img class="w-[25rem] mx-[auto]" src={logo.src} alt="logo finca Casiana">
 
         <div
-          class="mt-10 space-y-4 text-base md:text-xl leading-relaxed text-stone-600"
+          class="mt-14 space-y-4 text-base md:text-xl leading-relaxed text-stone-600"
         >
           <p>
             Somos una finca familiar ubicada en el portal de acceso este a la
