@@ -56,13 +56,16 @@ const dataNoConfort = { Interiores: noConfort } satisfies Partial<
 >;
 
 import logo from "../../../public/Logo-03.png";
+import logo from "../../../public/Logo-03.png";
 ---
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
     <section class="md:mt-[5em]">
+    <section class="md:mt-[5em]">
       <div class="max-w-5xl mx-auto">
         <HeroCarousel
+          mp4Src="../../../video_cab.mp4"
           mp4Src="../../../video_cab.mp4"
           posterSrc=""
           autoplay
@@ -75,6 +78,9 @@ import logo from "../../../public/Logo-03.png";
           Cabañas equipadas, listas todo el año
         </h2>
         <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          En 
+          <img class="w-[6rem] md:w-[8rem] mx-[auto] inline" src={logo.src} alt="logo finca Casiana"> 
+          te ofrecemos cabañas equipadas y listas para recibirte en cualquier época del año.
           En 
           <img class="w-[6rem] md:w-[8rem] mx-[auto] inline" src={logo.src} alt="logo finca Casiana"> 
           te ofrecemos cabañas equipadas y listas para recibirte en cualquier época del año.
@@ -151,6 +157,7 @@ import logo from "../../../public/Logo-03.png";
 
         <h2
           class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
         >
           CABAÑAS CONFORT PARA 3 PERSONAS
         </h2>
@@ -158,6 +165,7 @@ import logo from "../../../public/Logo-03.png";
         <CarouselGallery data={dataConfort} intervalMs={3800} groupBy="cabin" />
 
         <h2
+          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
           class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
         >
           CABAÑA FAMILIAR PARA 5 O 6 PERSONAS
