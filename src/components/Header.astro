@@ -45,14 +45,14 @@ const isActive = (href: string) => {
       <ul>
         <li><a class={isActive(homeHref)}     href={homeHref}>{LABELS.home}</a></li>
         <li><a class={isActive(cabanasHref)}  href={cabanasHref}>{LABELS.cabins}</a></li>
-        <!-- <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li> -->
+        <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li>
         <li><a class={isActive(reservasHref)} href={reservasHref}>{LABELS.bookings}</a></li>
       </ul>
     </nav>
 
     <!-- Derecha -->
     <div class="actions">
-      <!-- <LanguageSwitcher locale={locale} path={path} /> -->
+      <LanguageSwitcher locale={locale} path={path} /> 
       <button class="pill hidden" type="button" data-currency
         aria-label={t.ui?.changeCurrency ?? (locale === 'es' ? 'Cambiar moneda' : 'Change Currency')}>
         {currency}
@@ -71,7 +71,7 @@ const isActive = (href: string) => {
       <ul>
         <li><a class={isActive(homeHref)}     href={homeHref}>{LABELS.home}</a></li>
         <li><a class={isActive(cabanasHref)}  href={cabanasHref}>{LABELS.cabins}</a></li>
-        <!-- <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li> -->
+        <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li> 
         <li><a class={isActive(reservasHref)} href={reservasHref}>{LABELS.bookings}</a></li>
 
         <li style="display:none !important; padding:12px 4px; display:flex; gap:12px">
@@ -79,6 +79,7 @@ const isActive = (href: string) => {
         </li>
       </ul>
     </nav>
+    <LanguageSwitcher locale={locale} path={path} /> 
   </div>
 </header>
 

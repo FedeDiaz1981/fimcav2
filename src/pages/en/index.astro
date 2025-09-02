@@ -9,72 +9,83 @@ const t = getDict(lang);
 import HeroCarousel from "../../components/HeroCarousel.astro";
 
 import MapaTuristico from "../../components/MapaTuristico.astro";
-const imgs = [
-  {
-    src: "https://l.icdbcdn.com/oh/c1fa0d9b-6f22-44c1-b258-01338738eac5.jpg?w=2080",
-    alt: "Living con estufa",
-  },
-  {
-    src: "https://l.icdbcdn.com/oh/c1fa0d9b-6f22-44c1-b258-01338738eac5.jpg?w=2080",
-    alt: "Living con estufa",
-  },
-];
+
+import logo from "../../../public/Logo-03.png";
 ---
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
-    <HeroCarousel  youtubeUrl="https://youtu.be/l8QO0xbI9Jk" />
+    <HeroCarousel youtubeUrl="https://youtu.be/l8QO0xbI9Jk" />
 
-    <section class="mt-12 mb-12 px-4">
+    <section class="mt-12 px-4 mb-12 pb-12">
       <div class="max-w-3xl mx-auto text-center">
         <h3
-          class="text-xs font-semibold uppercase tracking-widest text-stone-500"
+          class="text-2xl font-semibold uppercase tracking-widest text-stone-500 mx-[auto] mb-4"
         >
-          Welcome to
+          welcome to
         </h3>
 
-        <h1 class="mt-2 text-4xl md:text-5xl font-semibold text-stone-900">
-          Finca Casiana
-        </h1>
+        <img
+          class="w-[25rem] mx-[auto]"
+          src={logo.src}
+          alt="logo finca Casiana"
+        />
 
         <div
-          class="mt-6 space-y-4 text-base md:text-lg leading-relaxed text-stone-600"
+          class="mt-14 space-y-4 text-base md:text-xl leading-relaxed text-stone-600"
         >
           <p>
-            We are a family-run estate located at the eastern gateway to the
-            city of San Juan. A place designed for rest, a connection with
+            We are a family estate located at the eastern entrance to the city
+            of San Juan. A space designed for relaxation, connection with
             nature, and the creation of unforgettable moments.
           </p>
           <p>
-            Our natural setting, personalized attention, and well-equipped
+            Our natural surroundings, personalized attention, and well-equipped
             facilities make Finca Casiana the ideal place for families, couples,
-            and groups who want to unplug from the noise and reconnect with what
-            truly matters.
+            and groups looking to disconnect from the hustle and bustle and
+            reconnect with what's essential.
           </p>
           <p>
-            We aim to offer a space to meet nature where every visitor can enjoy
-            an authentic, safe, and comfortable experience. We focus on slow
-            tourism, hospitality, and care for every detail.
+            We seek to provide a space where visitors can connect with nature,
+            where every visitor can enjoy an authentic, safe, and comfortable
+            experience. We focus on slow tourism, hospitality, and attention to
+            every detail.
           </p>
         </div>
 
         <div class="mt-10">
-          <h3 class="text-xl font-semibold text-stone-900">Vision</h3>
+          <h3 class="text-4xl font-semibold text-stone-900">Vision</h3>
           <div
             class="mx-auto mt-2 h-1 w-16 rounded-full"
             style="background:#C76B4E;"
           >
           </div>
-          <p class="mt-4 text-base md:text-lg leading-relaxed text-stone-600">
-            To position ourselves as a leading destination in San Juan for those
-            seeking tranquility, nature, and quality service. We aspire to be a
-            regional benchmark in rural tourism and special events.
+          <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+            To position ourselves as a prominent destination in San Juan for
+            those seeking tranquility, nature, and quality service. We aspire to
+            be a benchmark in rural tourism and special events in the region.
           </p>
         </div>
       </div>
+      <div class="mt-[8em]">
+        <MapaTuristico
+          fijo={{ lat: -31.555666223254082, lng: -68.48057388609342 }}
+          locale="en"
+          i18n={{ title: "Location" }}
+        />
+      </div>
+      <div class="mt-10 grid gap-4 md:grid-cols-3 items-start md:items-center">
+        <p class="md:col-span-2 text-stone-700 text-lg md:text-end md:pr-16">
+          Check availability in real time and book in simple steps.
+        </p>
+        <a
+          href="/es/reservas"
+          class="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-white w-80"
+          style="background:#C76B4E"
+        >
+          See availability
+        </a>
+      </div>
     </section>
-    <MapaTuristico
-      fijo={{ lat: -31.555666223254082, lng: -68.48057388609342 }}
-    />
   </main>
 </Base>

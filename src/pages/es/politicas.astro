@@ -1,0 +1,82 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDict, type Locale } from "../../i18n/config";
+import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+
+const { lang } = Astro.params as { lang: Locale };
+const t = getDict(lang);
+---
+
+<Base lang={lang} title={t.header.title}>
+  <main class="container mx-auto">
+    <section class="mt-12 px-4 mb-12 pb-12">
+      <div class="max-w-3xl mx-auto text-center">
+        <h3 class="text-4xl font-semibold text-stone-900 text-center">Nuestra Política</h3>
+        <div
+          class="mx-auto mt-2 h-1 w-16 rounded-full"
+          style="background:#C76B4E;"
+        >
+        </div>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Las reservas quedan en firme al recibir la confirmación de Finca
+          Casiana por correo electrónico o whatsapp, lo cual se hará luego de la
+          recepción de la seña
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Su reserva está garantizada hasta el horario de check-in el día de su
+          llegada. Después de ese momento, perderá su garantía y la cabaña
+          podría reasignarse
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          La devolución de la seña queda sujeta a la posibilidad de reasignar la
+          cabaña a otro huésped por parte de Finca Casiana.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Prolongación de su estancia: una vez reservada su estancia con
+          nosotros, puede prolongarla (según disponibilidad) simplemente
+          avisándonos antes de su llegada. Si ya se aloja con nosotros y desea
+          prolongar su estancia, por favor, avísenos al menos 24 horas antes de
+          su fecha de salida. Haremos todo lo posible por adaptarnos a sus
+          nuevos planes, lo que puede incluir la reubicación en un apartamento
+          similar si fuera necesario.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          El número de personas que residan en las cabañas debe ser el mismo que
+          el confirmado en la reserva. El alojamiento de huéspedes adicionales
+          está sujeto a nuestra previa autorización y al cumplimiento de las
+          condiciones que les informemos. Nos reservamos el derecho a cancelar
+          cualquier reserva, sin reembolso, si un número no confirmado de
+          personas pernocta en las cabañas.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Se acepta el ingreso de mascotas a las cabañas y al complejo, previa
+          autorización de Finca Casiana y en las condiciones que esta
+          establezca.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          La ropa de cama y las toallas deben colocarse donde se encontraron
+          originalmente.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Finca Casiana no se hace responsable de objetos personales perdidos u
+          olvidados en las instalaciones.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Las cabañas, así como los espacios comunes, todo el equipamiento y el
+          mobiliario, deberán tratarse con cuidado y mantenerse en orden. El
+          inquilino es financieramente responsable de cualquier daño. Esto
+          incluye pérdidas causadas por acciones y comportamiento negligentes
+          del inquilino o de un tercero. Se realizará una revisión resumida de
+          la hora de salida del apartamento. Sin embargo, se realizará una
+          revisión más detallada del estado de las cabañas y de todo el
+          equipamiento e instalaciones poco después de la salida y antes de que
+          otro huésped ocupe el apartamento. El inquilino es responsable de
+          cualquier daño o rotura que se encuentre que supere el desgaste y uso
+          normales. En este caso, se enviará inmediatamente por correo
+          electrónico o whatsapp una declaración detallada de los daños junto
+          con una factura por el coste de la reparación o sustitución.
+        </p>
+      </div>
+    </section>
+  </main>
+</Base>

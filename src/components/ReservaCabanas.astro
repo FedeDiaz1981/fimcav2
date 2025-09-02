@@ -1,5 +1,5 @@
 ---
-/** ReservaCabanas.astro — limpio, con selección de noches, validación de formulario y modal **/
+/** ReservaCabanas.astro — ahora con i18n (es/en), sin strings hardcodeados **/
 
 // Tipos
 type Cabin = {
@@ -17,9 +17,13 @@ type Unavailable = {
 type BookingDict = {
   months: string[];
   weekdays: string[]; // inicia lunes ['Lu','Ma','Mi','Ju','Vi','Sa','Do']
-  actions: { reserve: string; reset: string };
+  actions: { reserve: string; reset: string; close: string };
   hints: { selectCabin: string; invalidRange: string; unavailable: string };
   legend: { available: string; blocked: string; selected: string };
+  labels: { nights: string; name: string; phone: string; email: string; cabin: string };
+  modal: { title: string; body: string; close?: string };
+  aria: { prevMonth: string; nextMonth: string };
+  units: { night_one: string; night_other: string };
 };
 
 interface Props {
@@ -28,38 +32,66 @@ interface Props {
   onlyCabinId?: string | null;
   months?: number; // default 3
   minDate?: string; // ISO 'YYYY-MM-DD'
-  dict?: BookingDict; // i18n
+  dict?: Partial<BookingDict>; // i18n override (merge superficial)
+  locale?: 'es' | 'en'; // default 'es'
   defaultNights?: number; // noches por defecto (default 2)
 }
 
-const DEFAULT_DICT: BookingDict = {
+const ES_DICT: BookingDict = {
   months: [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
+    'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
   ],
-  weekdays: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"],
-  actions: { reserve: "Reservar", reset: "Limpiar" },
+  weekdays: ['Lu','Ma','Mi','Ju','Vi','Sa','Do'],
+  actions: { reserve: 'Reservar', reset: 'Limpiar', close: 'Cerrar' },
   hints: {
-    selectCabin: "Primero elegí una cabaña.",
-    invalidRange: "El rango incluye fechas no disponibles.",
-    unavailable: "No disponible",
+    selectCabin: 'Primero elegí una cabaña.',
+    invalidRange: 'El rango incluye fechas no disponibles.',
+    unavailable: 'No disponible',
   },
-  legend: {
-    available: "Disponible",
-    blocked: "No disponible",
-    selected: "Seleccionado",
+  legend: { available: 'Disponible', blocked: 'No disponible', selected: 'Seleccionado' },
+  labels: { nights: 'Noches:', name: 'Nombre *', phone: 'Celular *', email: 'Email *', cabin: 'Cabaña' },
+  modal: {
+    title: 'Pedido enviado',
+    body: 'Su pedido de reserva fue enviado. Nos pondremos en contacto para la confirmación. Gracias por elegirnos.',
+    close: 'Cerrar',
   },
+  aria: { prevMonth: 'Mes anterior', nextMonth: 'Mes siguiente' },
+  units: { night_one: 'noche', night_other: 'noches' },
 };
+
+const EN_DICT: BookingDict = {
+  months: [
+    'January','February','March','April','May','June','July','August','September','October','November','December',
+  ],
+  weekdays: ['Mo','Tu','We','Th','Fr','Sa','Su'],
+  actions: { reserve: 'Reserve', reset: 'Clear', close: 'Close' },
+  hints: {
+    selectCabin: 'Select a cabin first.',
+    invalidRange: 'The range includes unavailable dates.',
+    unavailable: 'Unavailable',
+  },
+  legend: { available: 'Available', blocked: 'Unavailable', selected: 'Selected' },
+  labels: { nights: 'Nights:', name: 'Name *', phone: 'Phone *', email: 'Email *', cabin: 'Cabin' },
+  modal: {
+    title: 'Request sent',
+    body: "Your booking request was sent. We'll contact you to confirm. Thanks for choosing us.",
+    close: 'Close',
+  },
+  aria: { prevMonth: 'Previous month', nextMonth: 'Next month' },
+  units: { night_one: 'night', night_other: 'nights' },
+};
+
+function deepMerge<T extends Record<string, any>>(base: T, override?: Partial<T>): T {
+  const out: any = { ...base };
+  if (!override) return out;
+  for (const k of Object.keys(override)) {
+    const ov: any = (override as any)[k];
+    if (Array.isArray(ov)) out[k] = ov.slice();
+    else if (ov && typeof ov === 'object') out[k] = { ...(base as any)[k], ...ov };
+    else if (ov !== undefined) out[k] = ov;
+  }
+  return out as T;
+}
 
 const {
   cabins,
@@ -68,16 +100,18 @@ const {
   months = 3,
   minDate,
   dict,
+  locale = 'es',
   defaultNights = 2,
 } = Astro.props as Props;
 
-const D = dict ?? DEFAULT_DICT;
+const BASE = locale === 'en' ? EN_DICT : ES_DICT;
+const D = deepMerge(BASE, dict);
 
-function normalizeUnavailable(u: Props["unavailable"]) {
+function normalizeUnavailable(u: Props['unavailable']) {
   const map = new Map<string, Set<string>>();
   if (Array.isArray(u)) {
     for (const { cabinId, dates } of u) map.set(cabinId, new Set(dates || []));
-  } else if (u && typeof u === "object") {
+  } else if (u && typeof u === 'object') {
     for (const [cid, dates] of Object.entries(u)) map.set(cid, new Set(dates));
   }
   return map;
@@ -94,7 +128,7 @@ function toISO(d: Date) {
   return local.toISOString().slice(0, 10);
 }
 const minISO =
-  typeof minDate === "string" && /\d{4}-\d{2}-\d{2}/.test(minDate)
+  typeof minDate === 'string' && /\d{4}-\d{2}-\d{2}/.test(minDate)
     ? minDate
     : toISO(today);
 
@@ -115,7 +149,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
   data-comp="booking"
   data-cabins={cabinsPayload}
   data-unav={unavailablePayload}
-  data-only={onlyCabinId ?? ""}
+  data-only={onlyCabinId ?? ''}
   data-months={months}
   data-min={minISO}
   data-dict={dictPayload}
@@ -147,7 +181,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
                 stroke-width="1.5"
               />
             </svg>
-            <span>{c.name ?? `Cabaña ${c.id}`}</span>
+            <span>{c.name ?? `${D.labels.cabin} ${c.id}`}</span>
           </button>
         ))
     }
@@ -159,7 +193,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       <div class="text-sm text-gray-700" data-current-cabin></div>
       <div class="flex items-center gap-3">
         <label class="text-sm text-gray-700 flex items-center gap-2">
-          <span>Noches:</span>
+          <span>{D.labels.nights}</span>
           <input
             type="number"
             min="1"
@@ -188,7 +222,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
     <!-- Formulario de contacto -->
     <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
       <label class="text-sm grid gap-1">
-        <span>Nombre *</span>
+        <span>{D.labels.name}</span>
         <input
           type="text"
           data-fname
@@ -197,7 +231,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         />
       </label>
       <label class="text-sm grid gap-1">
-        <span>Celular *</span>
+        <span>{D.labels.phone}</span>
         <input
           type="tel"
           data-phone
@@ -206,7 +240,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         />
       </label>
       <label class="text-sm grid gap-1">
-        <span>Email *</span>
+        <span>{D.labels.email}</span>
         <input
           type="email"
           data-mail
@@ -259,17 +293,16 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       class="relative z-10 h-full w-full flex items-center justify-center p-4"
     >
       <div class="max-w-lg w-full rounded-2xl bg-white p-6 shadow-xl border">
-        <h3 class="text-lg font-semibold mb-2">Pedido enviado</h3>
+        <h3 class="text-lg font-semibold mb-2">{D.modal.title}</h3>
         <p class="text-sm text-gray-700">
-          Su pedido de reserva fue envíado, nos pondremos en contacto para la
-          confirmación. Gracias por elegirnos.
+          {D.modal.body}
         </p>
         <div class="mt-4 flex justify-end">
           <button
             type="button"
             data-modal-close
             class="rounded-full border px-3 py-1.5 text-sm hover:bg-gray-50"
-            >Cerrar</button
+            >{D.modal.close ?? D.actions.close}</button
           >
         </div>
       </div>
@@ -278,7 +311,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
 
   <script is:inline>
     (() => {
-      const root = document.currentScript?.closest("section");
+      const root = document.currentScript?.closest('section');
       if (!root) return;
 
       // Payloads
@@ -287,21 +320,21 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       let DICT = {};
       try {
         CABINS = JSON.parse(
-          decodeURIComponent(root.dataset.cabins || "%5B%5D")
+          decodeURIComponent(root.dataset.cabins || '%5B%5D')
         );
       } catch {}
       try {
-        UNAV = JSON.parse(decodeURIComponent(root.dataset.unav || "%7B%7D"));
+        UNAV = JSON.parse(decodeURIComponent(root.dataset.unav || '%7B%7D'));
       } catch {}
       try {
-        DICT = JSON.parse(decodeURIComponent(root.dataset.dict || "%7B%7D"));
+        DICT = JSON.parse(decodeURIComponent(root.dataset.dict || '%7B%7D'));
       } catch {}
-      const ONLY = root.dataset.only || "";
+      const ONLY = root.dataset.only || '';
       // Meses: en desktop se respeta el prop; en mobile (<640px) forzamos 1
       const BASE_MONTHS = Math.max(1, Number(root.dataset.months || 3));
       let VISIBLE_MONTHS = BASE_MONTHS;
 
-      const MQL_MOBILE = window.matchMedia("(max-width: 639px)");
+      const MQL_MOBILE = window.matchMedia('(max-width: 639px)');
       function applyResponsiveMonths(shouldRender = false) {
         const next = MQL_MOBILE.matches ? 1 : BASE_MONTHS;
         if (next !== VISIBLE_MONTHS) {
@@ -311,63 +344,63 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       }
       // set inicial + listener (compat)
       applyResponsiveMonths(false);
-      if (typeof MQL_MOBILE.addEventListener === "function") {
-        MQL_MOBILE.addEventListener("change", () =>
+      if (typeof MQL_MOBILE.addEventListener === 'function') {
+        MQL_MOBILE.addEventListener('change', () =>
           applyResponsiveMonths(true)
         );
       } else {
         // Safari viejo
         MQL_MOBILE.addListener(() => applyResponsiveMonths(true));
       }
-      const MIN_ISO = root.dataset.min || "";
+      const MIN_ISO = root.dataset.min || '';
 
       // Estado
       let nights = Math.max(1, Number(root.dataset.nights || 2));
-      let cabinId = ONLY || CABINS[0]?.id || "";
-      let startISO = "";
-      let endISO = "";
+      let cabinId = ONLY || CABINS[0]?.id || '';
+      let startISO = '';
+      let endISO = '';
       let focusDate = parseISO(MIN_ISO) || todayLocal();
 
       // Refs UI
-      const bar = root.querySelector("[data-cabin-bar]");
-      const nightsInput = root.querySelector("[data-nights-input]");
-      const currentCabinEl = root.querySelector("[data-current-cabin]");
-      const calWrap = root.querySelector("[data-calendars]");
-      const hintEl = root.querySelector("[data-hint]");
-      const summaryEl = root.querySelector("[data-summary]");
-      const resetBtn = root.querySelector("[data-reset]");
-      const submitBtn = root.querySelector("[data-submit]");
-      const fName = root.querySelector("[data-fname]");
-      const fPhone = root.querySelector("[data-phone]");
-      const fMail = root.querySelector("[data-mail]");
+      const bar = root.querySelector('[data-cabin-bar]');
+      const nightsInput = root.querySelector('[data-nights-input]');
+      const currentCabinEl = root.querySelector('[data-current-cabin]');
+      const calWrap = root.querySelector('[data-calendars]');
+      const hintEl = root.querySelector('[data-hint]');
+      const summaryEl = root.querySelector('[data-summary]');
+      const resetBtn = root.querySelector('[data-reset]');
+      const submitBtn = root.querySelector('[data-submit]');
+      const fName = root.querySelector('[data-fname]');
+      const fPhone = root.querySelector('[data-phone]');
+      const fMail = root.querySelector('[data-mail]');
 
-      const modal = root.querySelector("[data-modal]");
-      const modalOv = root.querySelector("[data-modal-overlay]");
-      const modalClose = root.querySelector("[data-modal-close]");
+      const modal = root.querySelector('[data-modal]');
+      const modalOv = root.querySelector('[data-modal-overlay]');
+      const modalClose = root.querySelector('[data-modal-close]');
 
       if (ONLY) {
-        bar?.classList.add("hidden");
+        bar?.classList.add('hidden');
       }
 
       // Botonera de cabañas
-      const chips = Array.from(root.querySelectorAll(".cabin-chip"));
+      const chips = Array.from(root.querySelectorAll('.cabin-chip'));
       chips.forEach((ch) =>
-        ch.addEventListener("click", () => {
-          const id = ch.getAttribute("data-cabin") || "";
+        ch.addEventListener('click', () => {
+          const id = ch.getAttribute('data-cabin') || '';
           if (!id) return;
           cabinId = id;
           recomputeFromStart(true);
           chips.forEach((x) => {
             const act = x === ch;
             x.dataset.active = String(act);
-            x.setAttribute("aria-pressed", String(act));
+            x.setAttribute('aria-pressed', String(act));
           });
           renderAll();
         })
       );
 
       // Inputs
-      nightsInput?.addEventListener("input", () => {
+      nightsInput?.addEventListener('input', () => {
         const n = Math.max(
           1,
           Math.min(30, Number(nightsInput.value || nights))
@@ -379,35 +412,35 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
           endISO = fits
             ? addDaysISO(startISO, nights)
             : findFirstSpan(cabinId, MIN_ISO, nights).endISO;
-          if (!endISO) startISO = "";
+          if (!endISO) startISO = '';
         }
         renderAll();
       });
 
       [fName, fPhone, fMail].forEach((inp) =>
-        inp?.addEventListener("input", updateSubmitState)
+        inp?.addEventListener('input', updateSubmitState)
       );
 
-      resetBtn?.addEventListener("click", () => {
-        startISO = "";
-        endISO = "";
-        fName.value = "";
-        fPhone.value = "";
-        fMail.value = "";
+      resetBtn?.addEventListener('click', () => {
+        startISO = '';
+        endISO = '';
+        fName.value = '';
+        fPhone.value = '';
+        fMail.value = '';
         renderAll();
       });
 
-      submitBtn?.addEventListener("click", () => {
+      submitBtn?.addEventListener('click', () => {
         if (!cabinId || !startISO || !endISO) {
           hintEl.textContent =
-            DICT.hints?.invalidRange || "Seleccioná un rango válido.";
+            DICT.hints?.invalidRange || 'Select a valid range.';
           return;
         }
         if (!fName.value || !fPhone.value || !fMail.value) {
           return;
         }
         const nightsNum = nightsCount(startISO, endISO);
-        console.log("Reserva exitosa", {
+        console.log('Reserva exitosa', {
           cabinId,
           startISO,
           endISO,
@@ -419,18 +452,18 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         openModal();
       });
 
-      modalOv?.addEventListener("click", closeModal);
-      modalClose?.addEventListener("click", closeModal);
+      modalOv?.addEventListener('click', closeModal);
+      modalClose?.addEventListener('click', closeModal);
 
       function openModal() {
-        modal?.classList.remove("hidden");
-        modal?.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
+        modal?.classList.remove('hidden');
+        modal?.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
       }
       function closeModal() {
-        modal?.classList.add("hidden");
-        modal?.setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
+        modal?.classList.add('hidden');
+        modal?.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
       }
 
       // --- Utilidades de fechas ---
@@ -440,16 +473,16 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         return d;
       }
       function parseISO(s) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(s || "")) return null;
-        const [y, m, d] = s.split("-").map(Number);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return null;
+        const [y, m, d] = s.split('-').map(Number);
         const dt = new Date(y, m - 1, d);
         dt.setHours(0, 0, 0, 0);
         return dt;
       }
       function toISO(d) {
         const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
         return `${y}-${m}-${day}`;
       }
       function addMonths(d, n) {
@@ -487,7 +520,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       }
       function addDaysISO(iso, days) {
         const d = parseISO(iso);
-        if (!d) return "";
+        if (!d) return '';
         d.setDate(d.getDate() + days);
         return toISO(d);
       }
@@ -499,7 +532,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
           if (!isPast(iso) && isRangeClearFor(cId, iso, nights)) return iso;
           cur.setDate(cur.getDate() + 1);
         }
-        return "";
+        return '';
       }
       function findFirstSpan(cId, fromISO, nights, maxDays = 365) {
         const start = parseISO(fromISO) || todayLocal();
@@ -510,7 +543,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
             return { startISO: iso, endISO: addDaysISO(iso, nights) };
           cur.setDate(cur.getDate() + 1);
         }
-        return { startISO: "", endISO: "" };
+        return { startISO: '', endISO: '' };
       }
 
       function nightsCount(aISO, bISO) {
@@ -522,7 +555,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
 
       function recomputeFromStart(restart = false) {
         startISO = findFirstFree(cabinId, MIN_ISO);
-        endISO = startISO ? addDaysISO(startISO, nights) : "";
+        endISO = startISO ? addDaysISO(startISO, nights) : '';
         if (!endISO || !isRangeClearFor(cabinId, startISO, nights)) {
           const span = findFirstSpan(cabinId, MIN_ISO, nights);
           startISO = span.startISO;
@@ -534,14 +567,14 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       function renderCalendars() {
         if (!calWrap) return;
         const firstMonth = startOfMonth(focusDate);
-        let html = "";
+        let html = '';
         for (let i = 0; i < VISIBLE_MONTHS; i++)
           html += renderMonth(addMonths(firstMonth, i));
         calWrap.innerHTML = html;
-        calWrap.querySelectorAll("[data-day]")?.forEach((el) => {
-          el.addEventListener("click", () => {
-            const iso = el.getAttribute("data-day") || "";
-            const disabled = el.getAttribute("data-disabled") === "true";
+        calWrap.querySelectorAll('[data-day]')?.forEach((el) => {
+          el.addEventListener('click', () => {
+            const iso = el.getAttribute('data-day') || '';
+            const disabled = el.getAttribute('data-disabled') === 'true';
             if (!iso) return;
             onDayClick(iso, disabled);
           });
@@ -558,7 +591,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         const pad = dowMondayFirst(first) - 1;
 
         const cells = [];
-        for (let i = 0; i < pad; i++) cells.push({ iso: "", blank: true });
+        for (let i = 0; i < pad; i++) cells.push({ iso: '', blank: true });
         for (let d = 1; d <= dim; d++) {
           const date = new Date(y, m, d);
           const iso = toISO(date);
@@ -566,38 +599,37 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
             !isPast(iso) && isRangeClearFor(cabinId, iso, nights);
           cells.push({ iso, blank: false, disabled: !canStart });
         }
-        while (cells.length % 7) cells.push({ iso: "", blank: true });
+        while (cells.length % 7) cells.push({ iso: '', blank: true });
 
         const head = (DICT.weekdays || [])
           .map(
             (w) =>
               `<div class="text-[11px] md:text-xs text-gray-500 text-center font-medium tracking-wide">${w}</div>`
           )
-          .join("");
+          .join('');
 
         const grid = cells
           .map((c) => {
             if (c.blank) return `<div class='h-8 md:h-9'></div>`;
             const d = Number(c.iso.slice(8, 10));
-            const dis = c.disabled ? "true" : "false";
-            // Botón circular, sin borde. Disabled: gris claro; normal: gris medio; hover: fondo suave
+            const dis = c.disabled ? 'true' : 'false';
             const baseCls =
-              "h-8 w-8 md:h-9 md:w-9 rounded-full text-sm flex items-center justify-center select-none";
+              'h-8 w-8 md:h-9 md:w-9 rounded-full text-sm flex items-center justify-center select-none';
             const disCls = c.disabled
-              ? " text-gray-300 cursor-not-allowed"
-              : " text-gray-700 hover:bg-gray-100";
+              ? ' text-gray-300 cursor-not-allowed'
+              : ' text-gray-700 hover:bg-gray-100';
             return `<button data-day='${c.iso}' data-disabled='${dis}'
               class='${baseCls + disCls}' aria-label='${c.iso}'>${d}</button>`;
           })
-          .join("");
+          .join('');
 
         return `
     <div class="rounded-2xl p-2 md:p-3">
       <div class="mb-2 flex items-center justify-between">
         <div class="text-gray-700 font-medium">${monthName} ${y}</div>
         <div class="flex gap-1">
-          <button type="button" data-prev-month class="cal-nav-btn" aria-label="Mes anterior">◀</button>
-          <button type="button" data-next-month class="cal-nav-btn" aria-label="Mes siguiente">▶</button>
+          <button type="button" data-prev-month class="cal-nav-btn" aria-label="${DICT.aria?.prevMonth || 'Previous month'}">◀</button>
+          <button type="button" data-next-month class="cal-nav-btn" aria-label="${DICT.aria?.nextMonth || 'Next month'}">▶</button>
         </div>
       </div>
       <div class="grid grid-cols-7 gap-1 mb-1">${head}</div>
@@ -609,10 +641,10 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         if (disabled) return;
         if (!cabinId) {
           hintEl.textContent =
-            DICT.hints?.selectCabin || "Seleccioná una cabaña.";
+            DICT.hints?.selectCabin || 'Select a cabin.';
           return;
         }
-        hintEl.textContent = "";
+        hintEl.textContent = '';
         startISO = iso;
         endISO = addDaysISO(startISO, nights);
         if (!isRangeClearFor(cabinId, startISO, nights)) {
@@ -620,7 +652,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
           startISO = span.startISO;
           endISO = span.endISO;
           if (!startISO) {
-            hintEl.textContent = DICT.hints?.invalidRange || "Rango inválido.";
+            hintEl.textContent = DICT.hints?.invalidRange || 'Invalid range.';
           }
         }
         renderSummary();
@@ -628,13 +660,13 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       }
 
       function paintSelection() {
-        const btns = calWrap.querySelectorAll("[data-day]");
+        const btns = calWrap.querySelectorAll('[data-day]');
         btns.forEach((btn) => {
-          btn.classList.remove("sel"); // limpiador simple
-          const iso = btn.getAttribute("data-day");
+          btn.classList.remove('sel'); // limpiador simple
+          const iso = btn.getAttribute('data-day');
           if (startISO && endISO && inRange(iso, startISO, endISO))
-            btn.classList.add("sel");
-          else if (startISO && iso === startISO) btn.classList.add("sel");
+            btn.classList.add('sel');
+          else if (startISO && iso === startISO) btn.classList.add('sel');
         });
       }
 
@@ -650,34 +682,40 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       }
 
       function bindMonthNav() {
-        calWrap.addEventListener("click", (e) => {
+        calWrap.addEventListener('click', (e) => {
           const t = e.target;
           if (!(t instanceof Element)) return;
-          if (t.hasAttribute("data-prev-month")) {
+          if (t.hasAttribute('data-prev-month')) {
             focusDate = addMonths(startOfMonth(focusDate), -1);
             renderCalendars();
           }
-          if (t.hasAttribute("data-next-month")) {
+          if (t.hasAttribute('data-next-month')) {
             focusDate = addMonths(startOfMonth(focusDate), +1);
             renderCalendars();
           }
         });
       }
 
+      function pluralNight(n) {
+        return n === 1
+          ? (DICT.units?.night_one || 'night')
+          : (DICT.units?.night_other || 'nights');
+      }
+
       function renderSummary() {
         if (startISO && endISO) {
           const nightsNum = nightsCount(startISO, endISO);
-          summaryEl.textContent = `${formatHuman(startISO)} → ${formatHuman(endISO)} • ${nightsNum} noche${nightsNum !== 1 ? "s" : ""}`;
+          summaryEl.textContent = `${formatHuman(startISO)} → ${formatHuman(endISO)} • ${nightsNum} ${pluralNight(nightsNum)}`;
         } else if (startISO) {
           summaryEl.textContent = `${formatHuman(startISO)} —`;
         } else {
-          summaryEl.textContent = "";
+          summaryEl.textContent = '';
         }
         if (currentCabinEl) {
           const cab = CABINS.find((c) => c.id === cabinId);
           currentCabinEl.textContent = cab
-            ? cab.name || `Cabaña ${cab.id}`
-            : "";
+            ? (cab.name || `${DICT.labels?.cabin || 'Cabin'} ${cab.id}`)
+            : '';
         }
         updateSubmitState();
       }
@@ -685,21 +723,21 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         const d = parseISO(iso);
         if (!d) return iso;
         const m = (DICT.months || [])[d.getMonth()] || String(d.getMonth() + 1);
-        return `${String(d.getDate()).padStart(2, "0")} ${m} ${d.getFullYear()}`;
-      }
+        return `${String(d.getDate()).padStart(2, '0')} ${m} ${d.getFullYear()}`;
+        }
 
       function updateSubmitState() {
         const okFields = !!(fName?.value && fPhone?.value && fMail?.value);
         const okDates = !!(startISO && endISO);
-        if (okFields && okDates) submitBtn?.removeAttribute("disabled");
-        else submitBtn?.setAttribute("disabled", "true");
+        if (okFields && okDates) submitBtn?.removeAttribute('disabled');
+        else submitBtn?.setAttribute('disabled', 'true');
       }
 
       function renderAll() {
         if (!startISO || !endISO) recomputeFromStart(true);
         renderCalendars();
         renderSummary();
-        hintEl.textContent = "";
+        hintEl.textContent = '';
         bindMonthNav();
       }
 
@@ -725,18 +763,18 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
     @apply rounded-full border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50;
   }
 
-  /* Estado seleccionado: burbuja negra, como en la imagen */
+  /* Estado seleccionado: burbuja negra */
   [data-calendars] [data-day].sel {
     @apply bg-gray-900 text-white;
   }
 
-  /* Días que no pueden iniciar (tu lógica ya los marca con data-disabled=true) */
-  [data-calendars] [data-day][data-disabled="true"] {
+  /* Días que no pueden iniciar */
+  [data-calendars] [data-day][data-disabled='true'] {
     @apply text-gray-300;
   }
 
-  /* Quita bordes duros heredados en contenedores y deja look aireado */
-  [data-comp="booking"] .rounded-2xl.border {
+  /* Contenedor aireado */
+  [data-comp='booking'] .rounded-2xl.border {
     border-color: #e5e7eb;
-  } /* gris suave */
+  }
 </style>

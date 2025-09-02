@@ -3,21 +3,13 @@ import Base from "../../layouts/Base.astro";
 import { getDict, type Locale } from "../../i18n/config";
 import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
 
-import E_01 from '../../../public/images/E_01.jpg'
-import E_02 from '../../../public/images/E_02.jpg'
-import E_03 from '../../../public/images/E_03.jpg'
+import logo_d from "../../../public/logo_disc.png";
 
-import I_01 from '../../../public/images/I_01.jpg'
-import I_02 from '../../../public/images/I_02.jpg'
-import I_03 from '../../../public/images/I_03.jpg'
+import ALBUM, { type AlbumItem } from "../../lib/album";
 
-import P_01 from '../../../public/images/P_01.jpg'
-import P_02 from '../../../public/images/P_02.jpg'
-import P_03 from '../../../public/images/P_03.jpg'
+import HeroCarousel from "../../components/HeroCarousel.astro";
 
-import Pl_01 from '../../../public/images/Pl_01.jpg'
-import Pl_02 from '../../../public/images/Pl_02.jpg'
-import Pl_03 from '../../../public/images/Pl_03.jpg'
+type Categoria = "Interiores" | "Exteriores" | "Parque" | "Pileta";
 
 const { lang } = Astro.params as { lang: Locale };
 const t = getDict(lang);
@@ -25,285 +17,170 @@ const t = getDict(lang);
 import CarouselGallery from "../../components/CarouselGallery.astro";
 import type { ImageItem, GalleryData } from "../../types/gallery"; // si separaste los tipos
 
-const Interiores: ImageItem[] = [
-  {
-    imagen: I_01.src,
-    categoria: "Interiores",
-    caption: "1",
-    capacity: 6,
-    model: "Familiar",
-  },
-  {
-    imagen:I_02.src,
-    categoria: "Interiores",
-    caption: "2",
-    capacity: 3,
-    model: "Confort",
-  },
-  {
-    imagen: I_03.src,
-    categoria: "Interiores",
-    caption: "3",
-    capacity: 3,
-    model: "Confort",
-  },
-];
 
-const Exteriores: ImageItem[] = [
-  {
-    imagen: E_01.src,
-    categoria: "Exteriores",
-    caption: "2",
-    capacity: 3,
-    model: "Confort",
-  },
-  {
-    imagen: E_02.src,
-    categoria: "Exteriores",
-    caption: "1",
-    capacity: 6,
-    model: "Familiar",
-  },
-  {
-    imagen: E_03.src,
-    categoria: "Exteriores",
-    caption: "3",
-    capacity: 3,
-    model: "Confort",
-  },
-];
+// helper para mapear a tu ImageItem
+const toItem = ({ imagen, caption, width, height }: AlbumItem) => ({
+  imagen,
+  categoria: "Interiores" as const,
+  caption,
+  width,
+  height,
+});
 
-const Parque: ImageItem[] = [
-  {
-    imagen: P_01.src,
-    categoria: "Parque",
-    caption: "",
-  },
-  {
-    imagen: P_02.src,
-    categoria: "Parque",
-    caption: "",
-  },
-  {
-    imagen: P_03.src,
-    categoria: "Parque",
-    caption: "1",
-  },
-];
+// dos arrays
+const confort = ALBUM.filter((a) => a.model === "Confort").map(toItem);
+const noConfort = ALBUM.filter((a) => a.model !== "Confort").map(toItem);
 
-const Pileta: ImageItem[] = [
-  {
-    imagen: Pl_01.src,
-    categoria: "Parque",
-    caption: "",
-  },
-  {
-    imagen: Pl_02.src,
-    categoria: "Parque",
-    caption: "",
-  },
-  {
-    imagen: Pl_03.src,
-    categoria: "Parque",
-    caption: "",
-  },
-];
-
-const data: Partial<GalleryData> = { Interiores, Exteriores, Parque, Pileta };
+// si lo querés en el formato que consume el componente:
+const dataConfort = { Interiores: confort } satisfies Partial<
+  Record<Categoria, ImageItem[]>
+>;
+const dataNoConfort = { Interiores: noConfort } satisfies Partial<
+  Record<Categoria, ImageItem[]>
+>;
 ---
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
-    <CarouselGallery data={data} intervalMs={3800} />
-
-    <section class="my-12 px-4">
+    <section class="md:mt-[5em]">
+    <section class="md:mt-[5em]">
       <div class="max-w-5xl mx-auto">
-        <!-- Header -->
-        <header class="text-center">
-          <h2 class="text-3xl md:text-4xl font-semibold text-stone-900">
-            Fully equipped cabins, ready all year
-          </h2>
-          <p class="mt-3 text-stone-600 text-lg">
-            At Finca Casiana, we welcome you in a natural setting—with the comfort
-            and personal attention you expect.
-          </p>
-        </header>
+        <HeroCarousel
+          youtubeUrl="https://www.youtube.com/watch?v=RQxHroh8WLU"
+          posterSrc=""
+          autoplay
+          preferSoundAutoplay={true}
+        />
+        
+        <h2
+          class="text-3xl md:text-[2.7rem] font-semibold text-stone-900 text-center pt-[5rem] hidden"
+        >
+          Equipped cabins, ready all year round
+        </h2>
+        <p class="mt-8 text-base md:text-[1.5rem] leading-relaxed text-stone-600">
+          At Finca Casiana, we offer fully equipped cabins ready to welcome you at any time of year.
+        </p>
 
         <!-- Features -->
-        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Nature -->
-          <article
-            class="flex gap-4 p-5 rounded-2xl border border-stone-200 bg-white shadow-sm"
-          >
-            <span
-              class="shrink-0 grid place-items-center w-10 h-10 rounded-full bg-stone-100 text-stone-700"
-            >
-              <!-- tree -->
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                ><path d="M12 2v7m0 0-3-3m3 3 3-3M6 22h12M12 9v13"></path></svg
-              >
-            </span>
+        <!-- Amenities-style -->
+        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+          <!-- Naturaleza -->
+          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+            <span class="text-stone-400 text-2xl"> 🌳 </span>
             <div>
-              <h3 class="font-semibold text-stone-900">
+              <h3
+                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+              >
                 Surrounded by nature and tranquility
               </h3>
-              <p class="mt-1 text-stone-600">Real rest, far from the noise.</p>
             </div>
           </article>
 
-          <!-- Amenities -->
-          <article
-            class="flex gap-4 p-5 rounded-2xl border border-stone-200 bg-white shadow-sm"
-          >
-            <span
-              class="shrink-0 grid place-items-center w-10 h-10 rounded-full bg-stone-100 text-stone-700"
-            >
-              <!-- bed -->
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                ><path d="M3 7h18v8H3zM3 15v4M21 15v4"></path></svg
-              >
-            </span>
+          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+            <span class="text-stone-400 text-2xl"> 🛏️ </span>
             <div>
-              <h3 class="font-semibold text-stone-900">Amenities</h3>
-              <ul class="mt-2 text-stone-600 space-y-1 list-disc pl-5">
-                <li>Air conditioning and heating</li>
-                <li>Equipped kitchen • bed linens</li>
-                <li>Free Wi-Fi</li>
-                <li>Smart TV with satellite</li>
-              </ul>
-            </div>
-          </article>
-
-          <!-- Accessibility -->
-          <article
-            class="flex gap-4 p-5 rounded-2xl border border-stone-200 bg-white shadow-sm"
-          >
-            <span
-              class="shrink-0 grid place-items-center w-10 h-10 rounded-full bg-stone-100 text-stone-700"
-            >
-              <!-- accessibility -->
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                ><circle cx="12" cy="4" r="2"></circle><path
-                  d="M6 8h12M12 6v5m-6-1 3 10m6 0 3-10"></path></svg
+              <h3
+                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
               >
-            </span>
-            <div>
-              <h3 class="font-semibold text-stone-900">Accessible</h3>
-              <p class="mt-1 text-stone-600">
-                Adapted for people with reduced mobility.
+                Amenities
+              </h3>
+              <p
+                class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2"
+              >
+                Air conditioning, heating, fully equipped kitchen, bed linen, free Wi-Fi, and a SMART TV with satellite dish.
               </p>
             </div>
           </article>
-
-          <!-- Pet Friendly -->
-          <article
-            class="flex gap-4 p-5 rounded-2xl border border-stone-200 bg-white shadow-sm"
-          >
-            <span
-              class="shrink-0 grid place-items-center w-10 h-10 rounded-full bg-stone-100 text-stone-700"
-            >
-              <!-- paw -->
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                ><circle cx="6.5" cy="8.5" r="2.2"></circle><circle
-                  cx="12"
-                  cy="6.5"
-                  r="2.2"></circle><circle cx="17.5" cy="8.5" r="2.2"
-                ></circle><path
-                  d="M12 12c3.6 0 6.5 2.4 6.5 5.3 0 1.5-1.4 2.7-3.1 2.7H8.6C6.9 20 5.5 18.8 5.5 17.3 5.5 14.4 8.4 12 12 12z"
-                ></path></svg
-              >
+          <!-- Accesibilidad -->
+          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+            <span class="text-stone-400 mt-1">
+              <img
+                src={logo_d.src}
+                alt="logo discapacidad"
+                class="w-[1.6rem]"
+              />
             </span>
             <div>
-              <h3 class="font-semibold text-stone-900">
-                Pet-friendly accommodation
+              <h3
+                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+              >
+                Adapted for people with reduced mobility.
               </h3>
-              <p class="mt-1 text-stone-600">Your pets are welcome.</p>
             </div>
           </article>
-
-          <!-- Shared areas -->
-          <article
-            class="md:col-span-2 flex gap-4 p-5 rounded-2xl border border-stone-200 bg-white shadow-sm"
-          >
-            <span
-              class="shrink-0 grid place-items-center w-10 h-10 rounded-full bg-stone-100 text-stone-700"
-            >
-              <!-- grid -->
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                ><rect x="3" y="3" width="7" height="7"></rect><rect
-                  x="14"
-                  y="3"
-                  width="7"
-                  height="7"></rect><rect x="3" y="14" width="7" height="7"
-                ></rect><rect x="14" y="14" width="7" height="7"></rect></svg
-              >
-            </span>
+          <!-- Pet Friendly -->
+          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+            <span class="text-stone-400 text-2xl"> 🐾 </span>
             <div>
-              <h3 class="font-semibold text-stone-900">Shared areas</h3>
-              <p class="mt-2 text-stone-600">
-                Fenced pool, spacious green areas, private parking, barbecue area and
-                wood-fired oven, soccer field, and our multipurpose hall
-                (available for social and corporate events).
+              <h3
+                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+              >
+                Pet Friendly Accommodation
+              </h3>
+              <p
+                class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2"
+              >
+                Common areas: Pool with perimeter fence, green spaces, private garages, grill and wood-burning oven, soccer field, and our multi-purpose room (optional for social and corporate events)
               </p>
             </div>
           </article>
         </div>
+
+        <h2
+          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+        >
+          CABINS FOR 3 PEOPLE
+        </h2>
+
+        <CarouselGallery data={dataConfort} intervalMs={3800} groupBy="cabin" />
+
+        <h2
+          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+        >
+          CABIN FOR 5 OR 6 PEOPLE
+        </h2>
+
+        <CarouselGallery
+          data={dataNoConfort}
+          intervalMs={3800}
+          groupBy="cabin"
+        />
+
+        <div class="my-12 grid gap-3 md:grid-cols-3">
+          <div class="flex items-center gap-3">
+            <span class="text-emerald-600">✅</span>
+            <span class="text-stone-700">Online reservations</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-emerald-600">✅</span>
+            <span class="text-stone-700"
+              >Payment in cash or by transfer</span
+            >
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-emerald-600">✅</span>
+            <span class="text-stone-700"
+              >Direct attention via WhatsApp for inquiries</span
+            >
+          </div>
+        </div>
+
+        <!-- CTA / Pagos / Contacto -->
+        <div class="mt-10 grid gap-4 md:grid-cols-3 items-start">
+          <p class="md:col-span-2 text-stone-700 text-lg">
+            Check availability in real time and book in simple steps.
+          </p>
+          <a
+            href="/es/reservas"
+            class="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-white"
+            style="background:#C76B4E"
+          >
+            See availability
+          </a>
+        </div>
       </div>
     </section>
-
-    <CarouselGallery data={data} intervalMs={3800} groupBy="cabin" />
-
-    <div class="my-12 grid gap-3 md:grid-cols-3">
-      <div class="flex items-center gap-3">
-        <span class="text-emerald-600">✅</span>
-        <span class="text-stone-700">Online bookings</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <span class="text-emerald-600">✅</span>
-        <span class="text-stone-700">Cash or bank transfer</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <span class="text-emerald-600">✅</span>
-        <span class="text-stone-700">Direct support via WhatsApp for inquiries</span>
-      </div>
-    </div>
-
-    <!-- CTA / Payments / Contact -->
-    <div class="mt-10 grid gap-4 md:grid-cols-3 items-start">
-      <p class="md:col-span-2 text-stone-700 text-lg">
-        Check real-time availability and book in a few simple steps.
-      </p>
-      <a
-        href="/en/reservas"
-        class="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-white"
-        style="background:#C76B4E"
-      >
-        Check availability
-      </a>
-    </div>
-  </main>
-</Base>
+  </main></Base
+>

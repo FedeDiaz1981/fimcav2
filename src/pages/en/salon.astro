@@ -2,14 +2,49 @@
 import Base from "../../layouts/Base.astro";
 import { getDict, type Locale } from "../../i18n/config";
 import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+import SimpleGallery from "../../components/SimpleGallery.astro";
+import type { SimpleImage } from "../../types/gallery";
+import { GALLERY_DATA } from "../../lib/gallery-data";
 
 const { lang } = Astro.params as { lang: Locale };
 const t = getDict(lang);
 
+const items = Object.values(GALLERY_DATA)
+  .flat()
+  .filter((a) => a.alt === "salon")
+  .map(({ imagen, width, height, alt }) => ({
+    imagen,
+    width,
+    height,
+    alt: alt,
+  }));
 ---
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
-    
+    <section class="md:mt-[5em] px-14">
+      <div class="max-w-[80px] mx-auto"></div>
+      <SimpleGallery images={items} />
+    </section>
+    <section class="flex-block flex-column justify-items-left md:px-[15rem] mb-20">
+      <p class="mt-10 text-base md:text-xl leading-relaxed text-stone-600 mx-4">
+        We have an air-conditioned room with capacity for 100 people, ideal for:
+      </p>
+      <ul class="mx-12 my-6">
+        <li class="mb-4"><h3 class="text-xl md:text-[1.3rem] leading-relaxed text-stone-600  font-medium">🎂 Birthday</h3></li>
+        <li class="my-4"><h3 class="text-xl md:text-[1.3rem] leading-relaxed text-stone-600  font-medium">💍 Weddings</h3></li>
+        <li class="my-4"><h3 class="text-xl md:text-[1.3rem] leading-relaxed text-stone-600  font-medium">🧘‍♀️ Withdrawals</h3></li>
+        <li class="mt-4"><h3 class="text-xl md:text-[1.3rem] leading-relaxed text-stone-600  font-medium">👥 Business meetings and training</h3></li>
+      </ul>
+
+      <p class="mt-8 mx-4 text-base md:text-xl leading-relaxed text-stone-600">
+        The venue includes furniture, a fully equipped kitchen, bathrooms, outdoor space, restrooms, catering services, and lunch service (optional).
+      </p>
+      <ul class="mx-12 my-6">
+        <li class="mb-4"><h3 class="text-xl md:text-[1.3rem] leading-relaxed text-stone-600  font-medium">✅ Reservations confirmed with advance payment</h3></li>
+        <li class="mb-4"><h3 class="text-xl md:text-[1.3rem] leading-relaxed text-stone-600  font-medium">✅ Partial or full payment option</h3></li>
+        <li class="mb-4"><h3 class="text-xl md:text-[1.3rem] leading-relaxed text-stone-600  font-medium">✅ Direct coordination with our team</h3></li>
+      </ul>
+    </section>
   </main>
 </Base>

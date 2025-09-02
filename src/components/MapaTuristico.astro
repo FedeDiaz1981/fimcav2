@@ -1,22 +1,47 @@
 ---
-/** MapaTuristicoLeaflet.astro — mobile: botón + overlay; desktop: sidebar + mapa */
-type LatLng = { lat: number; lng: number };
-type Place = {
-  id: string;
-  name: string;
-  query?: string;
-  lat?: number;
-  lng?: number;
-};
+import type { Place, Locale, MapaProps as Props } from "../types/maps";
 
-type Props = {
-  brandColor?: string;
-  alto?: number;
-  useRouting?: boolean;
-  fijo?: string | LatLng;
-  lugares?: Place[];
-  locale?: "es" | "en";
-  i18n?: { title?: string; subtitle?: string };
+type LatLng = { lat: number; lng: number };
+
+const POI_LABELS: Record<string, Partial<Record<Locale, string>>> = {
+  micro: {
+    es: "Microcentro de la Ciudad de San Juan",
+    en: "San Juan City Center",
+  },
+  aerop: {
+    es: "Aeropuerto Internacional Domingo F. Sarmiento",
+    en: "Domingo F. Sarmiento International Airport",
+  },
+  terminal: { es: "Terminal de ómnibus", en: "Bus Terminal" },
+  estadio: {
+    es: "Estadio San Juan del Bicentenario",
+    en: "San Juan Bicentennial Stadium",
+  },
+  velod: {
+    es: "Velódromo Vicente A. Chancay",
+    en: "Vicente A. Chancay Velodrome",
+  },
+  villicum: { es: "Autódromo El Villicum", en: "El Villicum Racetrack" },
+  zonda: {
+    es: "Autódromo Eduardo Copello “El Zonda”",
+    en: "Eduardo Copello “El Zonda” Racetrack",
+  },
+  punta: { es: "Dique Punta Negra", en: "Punta Negra Dam" },
+  ullum: { es: "Dique de Ullum", en: "Ullum Dam" },
+  difunta: { es: "Paraje Difunta Correa", en: "Difunta Correa Shrine" },
+  leoncito: {
+    es: "Parque Nacional El Leoncito",
+    en: "El Leoncito National Park",
+  },
+  ischi: {
+    es: "Parque Prov. Ischigualasto (Valle de la Luna)",
+    en: "Ischigualasto Provincial Park (Valley of the Moon)",
+  },
+  agua: { es: "Paso de Agua Negra a Chile", en: "Agua Negra Pass to Chile" },
+  libert: {
+    es: "Paso Los Libertadores a Chile",
+    en: "Los Libertadores Pass to Chile",
+  },
 };
 
 const {
@@ -28,6 +53,10 @@ const {
     {
       id: "micro",
       name: "Microcentro de la Ciudad de San Juan",
+      labels: {
+        es: "Microcentro de la Ciudad de San Juan",
+        en: "San Juan City Center",
+      },
       query: "Microcentro San Juan, Argentina",
       lat: -31.53694,
       lng: -68.525,
@@ -35,6 +64,10 @@ const {
     {
       id: "aerop",
       name: "Aeropuerto Internacional Domingo Faustino Sarmiento",
+      labels: {
+        es: "Aeropuerto Internacional Domingo F. Sarmiento",
+        en: "Domingo F. Sarmiento International Airport",
+      },
       query: "Aeropuerto Domingo Faustino Sarmiento, San Juan",
       lat: -31.57139,
       lng: -68.41806,
@@ -42,6 +75,7 @@ const {
     {
       id: "terminal",
       name: "Terminal de ómnibus",
+      labels: { es: "Terminal de ómnibus", en: "Bus Terminal" },
       query: "Terminal de ómnibus San Juan, Argentina",
       lat: -31.539318,
       lng: -68.511205,
@@ -49,6 +83,10 @@ const {
     {
       id: "estadio",
       name: "Estadio San Juan Del Bicentenario",
+      labels: {
+        es: "Estadio San Juan del Bicentenario",
+        en: "San Juan Bicentennial Stadium",
+      },
       query: "Estadio San Juan del Bicentenario",
       lat: -31.611946,
       lng: -68.527479,
@@ -56,6 +94,10 @@ const {
     {
       id: "velod",
       name: "Velódromo Vicente Alejo Chancay",
+      labels: {
+        es: "Velódromo Vicente A. Chancay",
+        en: "Vicente A. Chancay Velodrome",
+      },
       query: "Velódromo Vicente Alejo Chancay, San Juan",
       lat: -31.6095,
       lng: -68.523,
@@ -63,6 +105,7 @@ const {
     {
       id: "villicum",
       name: "Autódromo El Villicum",
+      labels: { es: "Autódromo El Villicum", en: "El Villicum Racetrack" },
       query: "Autódromo El Villicum, San Juan",
       lat: -31.39714,
       lng: -68.56079,
@@ -70,6 +113,10 @@ const {
     {
       id: "zonda",
       name: "Autódromo Eduardo Copello “El Zonda”",
+      labels: {
+        es: "Autódromo Eduardo Copello “El Zonda”",
+        en: "Eduardo Copello “El Zonda” Racetrack",
+      },
       query: "Autódromo El Zonda, San Juan",
       lat: -31.553972,
       lng: -68.694306,
@@ -77,6 +124,7 @@ const {
     {
       id: "punta",
       name: "Dique Punta Negra",
+      labels: { es: "Dique Punta Negra", en: "Punta Negra Dam" },
       query: "Dique Punta Negra, San Juan",
       lat: -31.5045,
       lng: -68.7845,
@@ -84,6 +132,7 @@ const {
     {
       id: "ullum",
       name: "Dique de Ullum",
+      labels: { es: "Dique de Ullum", en: "Ullum Dam" },
       query: "Dique de Ullum, San Juan",
       lat: -31.474769,
       lng: -68.649806,
@@ -91,6 +140,7 @@ const {
     {
       id: "difunta",
       name: "Paraje Difunta Correa",
+      labels: { es: "Paraje Difunta Correa", en: "Difunta Correa Shrine" },
       query: "Difunta Correa, San Juan",
       lat: -31.73507,
       lng: -67.9805,
@@ -98,6 +148,10 @@ const {
     {
       id: "leoncito",
       name: "Parque Nacional El Leoncito",
+      labels: {
+        es: "Parque Nacional El Leoncito",
+        en: "El Leoncito National Park",
+      },
       query: "Parque Nacional El Leoncito, San Juan",
       lat: -31.798527,
       lng: -69.295583,
@@ -105,6 +159,10 @@ const {
     {
       id: "ischi",
       name: "Parque Prov. Ischigualasto (Valle de la Luna)",
+      labels: {
+        es: "Parque Prov. Ischigualasto (Valle de la Luna)",
+        en: "Ischigualasto Provincial Park (Valley of the Moon)",
+      },
       query: "Parque Provincial Ischigualasto",
       lat: -30.163044,
       lng: -67.842792,
@@ -112,6 +170,10 @@ const {
     {
       id: "agua",
       name: "Paso de Agua Negra a Chile",
+      labels: {
+        es: "Paso de Agua Negra a Chile",
+        en: "Agua Negra Pass to Chile",
+      },
       query: "Paso de Agua Negra",
       lat: -30.192222,
       lng: -69.818333,
@@ -119,6 +181,10 @@ const {
     {
       id: "libert",
       name: "Paso Los Libertadores a Chile",
+      labels: {
+        es: "Paso Los Libertadores a Chile",
+        en: "Los Libertadores Pass to Chile",
+      },
       query: "Paso Los Libertadores",
       lat: -32.82724,
       lng: -70.09213,
@@ -132,7 +198,7 @@ const T = {
   es: {
     title: "Ubicación",
     subtitle: "Tocá los botones para ver puntos de interes",
-    base: "Punto base",
+    base: "Finca Ascaciana",
     minApprox: "min aprox.",
     kmStraight: "km en línea recta",
     acceptLang: "es",
@@ -158,11 +224,12 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
   crossorigin="anonymous"
 />
 
-<h3 class="text-4xl text-center font-semibold text-stone-900">{TITLE}</h2>
+<h3 class="text-4xl text-center font-semibold text-stone-900">{TITLE}</h3>
 <div
-            class="mx-auto mt-2 h-1 w-16 rounded-full mb-5 "
-            style="background:#C76B4E;"
-          ></div>
+  class="mx-auto mt-2 h-1 w-16 rounded-full mb-5"
+  style="background:#C76B4E;"
+>
+</div>
 
 <!-- Layout: mobile = solo mapa; desktop = sidebar + mapa -->
 <div
@@ -186,9 +253,9 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
             class="chip"
             data-id={l.id}
             aria-pressed="false"
-            title={l.name}
+            title={l.labels?.[locale] ?? l.name}
           >
-            {l.name}
+            {l.labels?.[locale] ?? l.name}
           </button>
         ))
       }
@@ -362,6 +429,8 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
     ).call(map, b, o);
   }
 
+  const labelOf = (p) => p.labels?.[locale] ?? p.name;
+
   (async function init() {
     base = typeof fijo === "string" ? fromCacheSmart(fijo) : null;
     base ||= await geocodeSmart(fijo);
@@ -378,15 +447,27 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
       maxZoom: 19,
     }).addTo(map);
 
-    L.circleMarker([base.lat, base.lng], {
-      radius: 8,
-      color: "#fff",
-      weight: 2,
-      fillColor: brandColor,
-      fillOpacity: 1,
+    // marcador base con pulso y tooltip permanente
+    const baseIcon = L.divIcon({
+      className: "leaflet-div-icon base-marker",
+      html: `
+    <span class="ring-red" aria-hidden="true"></span>
+    <span class="dot" aria-hidden="true"></span>
+  `,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+
+    L.marker([base.lat, base.lng], {
+      icon: baseIcon,
+      zIndexOffset: 1000,
     })
       .addTo(map)
-      .bindPopup(dict.base);
+      .bindTooltip(dict.base, {
+        permanent: true,
+        direction: "top",
+        offset: [0, -12],
+      });
 
     document
       .querySelectorAll(".chip[data-id]")
@@ -423,11 +504,13 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
           : null;
     if (!dest) return;
 
-    const m = L.marker([dest.lat, dest.lng], { title: place.name }).addTo(map);
+    const m = L.marker([dest.lat, dest.lng], { title: labelOf(place) }).addTo(
+      map
+    );
+
     markers.set(id, m);
 
-    let text = place.name,
-      layer;
+    let text = labelOf(place);
     let rt = null;
     if (useRouting) rt = await routeOSRM(base, dest).catch(() => null);
 
@@ -734,5 +817,136 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
     font-size: 12px;
     color: #9ca3af;
     text-align: right;
+  }
+
+  /* marcador base con efecto pulso */
+  .base-marker {
+    position: relative;
+  }
+  .base-marker .dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--brand);
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+  }
+  /* punto base (el centro) */
+  .base-marker {
+    position: relative;
+  }
+  .base-marker .dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--brand); /* tu color de marca */
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+  }
+
+  /* anillo rojo pulsante */
+  .base-marker .ring-red {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    border: 3px solid #dc2626; /* rojo */
+    opacity: 0.85;
+    animation: baseRing 1.6s ease-out infinite;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+    pointer-events: none;
+  }
+
+  @keyframes baseRing {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.85;
+    }
+    70% {
+      transform: translate(-50%, -50%) scale(3.3);
+      opacity: 0;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* Respeta reducción de movimiento del SO */
+  @media (prefers-reduced-motion: reduce) {
+    .base-marker .ring-red {
+      animation: none;
+      opacity: 0.6;
+    }
+  }
+</style>
+<style is:global>
+  /* limpiar el divIcon por defecto */
+  .leaflet-div-icon.base-marker {
+    background: transparent;
+    border: 0;
+  }
+
+  /* punto base + anillo rojo pulsante */
+  .base-marker {
+    position: relative;
+  }
+  .base-marker .dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--brand);
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+  }
+  .base-marker .ring-red {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    border: 3px solid #dc2626;
+    opacity: 0.85;
+    animation: baseRing 1.6s ease-out infinite;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+    pointer-events: none;
+  }
+  @keyframes baseRing {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.85;
+    }
+    70% {
+      transform: translate(-50%, -50%) scale(3.3);
+      opacity: 0;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .base-marker .ring-red {
+      animation: none;
+      opacity: 0.6;
+    }
   }
 </style>

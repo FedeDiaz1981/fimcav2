@@ -9,10 +9,6 @@ import { GALLERY_DATA } from "../../lib/gallery-data";
 const { lang } = Astro.params as { lang: Locale };
 const t = getDict(lang);
 
-// const images = Object.values(GALLERY_DATA)
-//   .flat()
-//   .filter(a => a.alt === "salon").map(({ imagen, ...rest }) => ({ src: imagen, ...rest }));
-
 const items = Object.values(GALLERY_DATA)
   .flat()
   .filter((a) => a.alt === "salon")
@@ -26,7 +22,7 @@ const items = Object.values(GALLERY_DATA)
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
-    <section class="mt-[5em] px-14">
+    <section class="md:mt-[5em] px-14">
       <div class="max-w-[80px] mx-auto"></div>
       <SimpleGallery images={items} />
     </section>

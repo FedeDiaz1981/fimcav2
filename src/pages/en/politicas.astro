@@ -1,0 +1,80 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDict, type Locale } from "../../i18n/config";
+import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+
+const { lang } = Astro.params as { lang: Locale };
+const t = getDict(lang);
+---
+
+<Base lang={lang} title={t.header.title}>
+  <main class="container mx-auto">
+    <section class="mt-12 px-4 mb-12 pb-12">
+      <div class="max-w-3xl mx-auto text-center">
+        <h3 class="text-4xl font-semibold text-stone-900 text-center">
+          Our Policy
+        </h3>
+        <div
+          class="mx-auto mt-2 h-1 w-16 rounded-full"
+          style="background:#C76B4E;"
+        >
+        </div>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Reservations are finalized upon receipt of confirmation from Finca
+          Casiana via email or WhatsApp, which will be made after receipt of the
+          deposit.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Your reservation is guaranteed until check-in time on the day of your
+          arrival. After that time, your guarantee will be lost and the cabin
+          may be reassigned.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          The refund of the deposit is subject to Finca Casiana's ability to
+          reassign the cabin to another guest.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Extending your stay: Once you have booked your stay with us, you can
+          extend it (subject to availability) simply by notifying us before your
+          arrival. If you are already staying with us and wish to extend your
+          stay, please notify us at least 24 hours before your departure date.
+          We will do our best to accommodate your new plans, which may include
+          relocating you to a similar apartment if necessary.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          The number of people staying in the cabins must be the same as
+          confirmed in the reservation. The accommodation of additional guests
+          is subject to our prior authorization and compliance with the
+          conditions we inform you of. We reserve the right to cancel any
+          reservation, without refund, if an unconfirmed number of people stay
+          in the cabins.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Pets are allowed in the cabins and the complex, subject to prior
+          authorization from Finca Casiana and under the conditions established.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Bedding and towels should be placed where they were originally found.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          Finca Casiana is not responsible for personal belongings lost or
+          forgotten on the premises.
+        </p>
+        <p class="mt-8 text-base md:text-xl leading-relaxed text-stone-600">
+          The cabins, as well as the common areas, all equipment, and
+          furnishings, must be treated with care and kept in order. The tenant
+          is financially responsible for any damage. This includes losses caused
+          by negligent actions and behavior of the tenant or a third party. A
+          summary inspection will be conducted at the time of departure from the
+          apartment. However, a more detailed inspection of the condition of the
+          cabins and all equipment and facilities will be conducted shortly
+          after departure and before another guest occupies the apartment. The
+          tenant is responsible for any damage or breakage found that exceeds
+          normal wear and tear. In this case, a detailed statement of the damage
+          will be sent immediately via email or WhatsApp, along with an invoice
+          for the cost of repair or replacement.
+        </p>
+      </div>
+    </section>
+  </main>
+</Base>
