@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import { getDict, type Locale } from "../../i18n/config";
 import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+import { GALLERY_DATA } from "../../lib/gallery-data";
 
 const { lang } = Astro.params as { lang: Locale };
 const t = getDict(lang);
@@ -11,11 +12,27 @@ import HeroCarousel from "../../components/HeroCarousel.astro";
 import MapaTuristico from "../../components/MapaTuristico.astro";
 
 import logo from "../../../public/Logo-03.png";
+
+const items = Object.values(GALLERY_DATA)
+  .flatMap(v => v ?? [])
+  .filter(it => it.alt === "Img_Hero")
+  .map(({ imagen, width, height, alt }) => ({
+    src: imagen,   // <<-- clave: convertir 'imagen' -> 'src'
+    alt,
+    width,
+    height,
+  }))
+  .sort((a, b) => {
+    const fn = (s: string) => (s.split("/").pop() ?? "").replace(/\?.*$/, "").replace(/#.*$/, "");
+    return fn(a.src).localeCompare(fn(b.src), "es", { numeric: true, sensitivity: "base" });
+  });
+
 ---
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
-    <HeroCarousel youtubeUrl="https://youtu.be/l8QO0xbI9Jk" />
+    <!-- <HeroCarousel youtubeUrl="https://youtu.be/l8QO0xbI9Jk" /> -->
+     <HeroCarousel  images={items} locale="es" autoplay={true} intervalMs={4500}/>
 
     <section class="mt-12 px-4 mb-12 pb-12">
       <div class="max-w-3xl mx-auto text-center">

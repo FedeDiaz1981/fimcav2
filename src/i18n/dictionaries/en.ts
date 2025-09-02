@@ -55,9 +55,9 @@ export const en: Dict = {
     ctaContact: "Contact",
     rights: "All rights reserved.",
     paths: {
-      cancel: "/en/cancellation-policy",
-      terms: "/en/terms-and-conditions",
-      privacy: "/en/privacy-policy",
+      cancel: "/en/politicas",
+      terms: "/en/politicas",
+      privacy: "/en/politicas",
       reserve: "/en/reservations",
       contact: "/en/contact",
     },
