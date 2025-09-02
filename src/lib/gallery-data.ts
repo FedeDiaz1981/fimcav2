@@ -52,6 +52,18 @@ function normalizeCategoria(seg?: string): Categoria | null {
   return null;
 }
 
+/* === NUEVO: comparador por "nombre" (alt -> caption -> archivo) === */
+function compareByNombre(a: ImageItem, b: ImageItem) {
+  const nombre = (i: ImageItem) =>
+    (i.alt?.trim() || i.caption?.trim() || i.imagen.split('/').pop() || '');
+
+  const byName = nombre(a).localeCompare(nombre(b), 'es', { numeric: true, sensitivity: 'base' });
+  if (byName !== 0) return byName;
+
+  // Desempate por nombre de archivo completo para estabilidad
+  return (a.imagen || '').localeCompare(b.imagen || '', 'es', { numeric: true, sensitivity: 'base' });
+}
+
 /**
  * Estructura recomendada:
  * public/images/
@@ -62,7 +74,6 @@ function normalizeCategoria(seg?: string): Categoria | null {
  *   Parque/
  *   Pileta/
  */
-
 export function buildGalleryData(): GalleryData {
   const out: GalleryData = {};
 
@@ -84,8 +95,13 @@ export function buildGalleryData(): GalleryData {
       height: m.height,
       categoria: cat,
       caption,
-      alt: parentFolder, // <<-- lo pedido
+      alt: parentFolder,
     });
+  }
+
+  // === NUEVO: ordenar cada categoría por "nombre" ===
+  for (const cat of CAT_ORDER) {
+    if (out[cat]?.length) out[cat]!.sort(compareByNombre);
   }
 
   return out;
