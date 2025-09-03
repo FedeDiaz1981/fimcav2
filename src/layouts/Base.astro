@@ -1,21 +1,26 @@
 ---
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { defaultLocale, locales, type Locale } from '../i18n/config';
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import WhatsAppButton from "../components/WhatsAppButton.astro";
+import { defaultLocale, locales, type Locale } from "../i18n/config";
 import "../styles/global.css";
 
-const guessed = (Astro.params?.lang ?? Astro.url.pathname.split('/')[1]) as Locale;
-const locale: Locale = (locales as readonly string[]).includes(guessed) ? guessed : defaultLocale;
+const guessed = (Astro.params?.lang ??
+  Astro.url.pathname.split("/")[1]) as Locale;
+const locale: Locale = (locales as readonly string[]).includes(guessed)
+  ? guessed
+  : defaultLocale;
 
 const { title } = Astro.props as { title?: string };
 ---
+
 <html lang={locale} class="h-full">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title ?? "Finca Casiana"}</title>
 
-     <!-- Favicon -->
+    <!-- Favicon -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/Logo-03.png" />
     <!-- PNGs opcionales (si no usás .svg/.ico) -->
@@ -26,16 +31,22 @@ const { title } = Astro.props as { title?: string };
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#505c27" />
-    
   </head>
- <body class="bg-[#ECE3D1] text-[#2F2F2F] antialiased">
+  <body class="bg-[#ECE3D1] text-[#2F2F2F] antialiased">
     <!-- ⬇️ pasamos SIEMPRE el idioma -->
     <Header lang={locale} />
     <slot />
+    <WhatsAppButton
+      <WhatsAppButton
+      phone="5492644570609"
+      position="br"
+      label=""
+    />
+    />
     <Footer
       lang={locale}
       instagramHandle="@fincacasiana"
-      phoneHref="https://wa.me/549264XXXXXXX"
+      phoneHref="https://wa.me5492644570609"
     />
   </body>
 </html>
