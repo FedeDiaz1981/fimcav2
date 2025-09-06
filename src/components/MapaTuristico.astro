@@ -324,18 +324,22 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
 
   /** @type {import('leaflet').Map} */ let map;
   /** @type {{lat:number,lng:number}} */ let base;
-  const markers = new Map();
-  /** @type {Map<string, import('leaflet').Marker>} */
+
+  /** Marcadores activos por id */
+  const markers = new Map(); // Map<string, L.Marker>
+
+  /** Capas (rutas / líneas) por id */
+  /** @type {Map<string, import('leaflet').Layer>} */
   const layers = new Map();
-  /** @type {Map<string, import('leaflet').Layer>}  */
+
+  /** Grupo que reúne TODAS las rutas/líneas para calcular bounds de una */
+  const routesGroup = L.featureGroup();
+
   const INITIAL_ZOOM = 12;
 
   const norm = (s) =>
-    String(s)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
+    String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
   function fromCacheSmart(q) {
     try {
       const v = localStorage.getItem("geo:" + norm(q));
@@ -344,6 +348,7 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
       return null;
     }
   }
+
   async function geocodeSmart(q) {
     try {
       if (q && typeof q === "object" && "lat" in q && "lng" in q) return q;
@@ -364,15 +369,11 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
         if (cached) return cached;
         try {
           const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(cand)}`;
-          const r = await fetch(url, {
-            headers: { "Accept-Language": dict.acceptLang },
-          });
+          const r = await fetch(url, { headers: { "Accept-Language": dict.acceptLang } });
           const j = await r.json();
           if (j?.[0]) {
             const loc = { lat: +j[0].lat, lng: +j[0].lon };
-            try {
-              localStorage.setItem("geo:" + norm(cand), JSON.stringify(loc));
-            } catch {}
+            try { localStorage.setItem("geo:" + norm(cand), JSON.stringify(loc)); } catch {}
             return loc;
           }
         } catch {}
@@ -382,17 +383,12 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
   }
 
   function haversine(a, b) {
-    const R = 6371,
-      t = (x) => (x * Math.PI) / 180;
-    const dLat = t(b.lat - a.lat),
-      dLon = t(b.lng - a.lng),
-      lat1 = t(a.lat),
-      lat2 = t(b.lat);
-    const s =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    const R = 6371, t = (x) => (x * Math.PI) / 180;
+    const dLat = t(b.lat - a.lat), dLon = t(b.lng - a.lng), lat1 = t(a.lat), lat2 = t(b.lat);
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(s));
   }
+
   async function routeOSRM(a, b) {
     const r = await fetch(
       `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`
@@ -401,34 +397,30 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
     const j = await r.json();
     const rt = j.routes?.[0];
     if (!rt) throw new Error("OSRM bad");
-    return {
-      distanceKm: rt.distance / 1000,
-      durationMin: rt.duration / 60,
-      geojson: rt.geometry,
-    };
+    return { distanceKm: rt.distance / 1000, durationMin: rt.duration / 60, geojson: rt.geometry };
   }
 
+  /** Encadre robusto: si no hay POIs, vuelve al centro base */
   function updateView() {
     if (!map || !base) return;
-    const pts = [L.latLng(base.lat, base.lng)];
-    markers.forEach((m) => pts.push(m.getLatLng()));
-    if (pts.length === 1) {
-      map.setView(pts[0], INITIAL_ZOOM, { animate: true });
-      return;
-    }
-    let b = L.latLngBounds(pts);
-    layers.forEach((layer) => {
-      if (typeof layer.getBounds === "function") {
-        try {
-          b = b.extend(layer.getBounds());
-        } catch {}
+
+    const points = [L.latLng(base.lat, base.lng)];
+    markers.forEach((m) => points.push(m.getLatLng()));
+
+    // bounds de todas las rutas activas
+    try {
+      const rb = routesGroup.getBounds();
+      if (rb && rb.isValid()) {
+        points.push(rb.getSouthWest(), rb.getNorthEast());
       }
-    });
-    const o = { padding: [60, 60], maxZoom: 15, animate: true };
-    (typeof map.flyToBounds === "function"
-      ? map.flyToBounds
-      : map.fitBounds
-    ).call(map, b, o);
+    } catch {}
+
+    if (points.length <= 1) {
+      map.setView([base.lat, base.lng], INITIAL_ZOOM, { animate: true });
+    } else {
+      const b = L.latLngBounds(points).pad(0.15);
+      map.fitBounds(b, { padding: [60, 60], maxZoom: 15, animate: true });
+    }
   }
 
   const labelOf = (p) => p.labels?.[locale] ?? p.name;
@@ -436,8 +428,7 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
   (async function init() {
     base = typeof fijo === "string" ? fromCacheSmart(fijo) : null;
     base ||= await geocodeSmart(fijo);
-    if (!base || Number.isNaN(base.lat) || Number.isNaN(base.lng))
-      base = { lat: -31.5375, lng: -68.521 };
+    if (!base || Number.isNaN(base.lat) || Number.isNaN(base.lng)) base = { lat: -31.5375, lng: -68.521 };
 
     map = L.map(mapId, {
       zoomControl: false,
@@ -445,35 +436,30 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
       attributionControl: false,
     }).setView([base.lat, base.lng], INITIAL_ZOOM);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-    }).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+
+    // grupo de rutas
+    routesGroup.addTo(map);
 
     // marcador base con pulso y tooltip permanente
     const baseIcon = L.divIcon({
       className: "leaflet-div-icon base-marker",
-      html: `
-    <span class="ring-red" aria-hidden="true"></span>
-    <span class="dot" aria-hidden="true"></span>
-  `,
+      html: `<span class="ring-red" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>`,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     });
 
-    L.marker([base.lat, base.lng], {
-      icon: baseIcon,
-      zIndexOffset: 1000,
-    })
+    L.marker([base.lat, base.lng], { icon: baseIcon, zIndexOffset: 1000 })
       .addTo(map)
-      .bindTooltip(dict.base, {
-        permanent: true,
-        direction: "top",
-        offset: [0, -12],
-      });
+      .bindTooltip(dict.base, { permanent: true, direction: "top", offset: [0, -12] });
 
-    document
-      .querySelectorAll(".chip[data-id]")
-      .forEach((btn) => btn.addEventListener("click", () => toggle(btn)));
+    document.querySelectorAll(".chip[data-id]").forEach((btn) =>
+      btn.addEventListener("click", () => toggle(btn))
+    );
+
+    // asegura layout correcto si se monta dentro de tabs/overlays
+    setTimeout(() => map.invalidateSize(), 0);
+
     updateView();
   })();
 
@@ -482,49 +468,49 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
     const place = lugares.find((l) => l.id === id);
     if (!place) return;
 
-    // toggle y sincronizar en TODAS las copias del chip
+    // toggle y sincronizar todas las copias del chip
     const active = !btn.classList.contains("on");
     document.querySelectorAll(`.chip[data-id="${id}"]`).forEach((el) => {
       el.classList.toggle("on", active);
       el.setAttribute("aria-pressed", String(active));
     });
 
+    // Si se desactiva: eliminar marker + capa y recalcular
     if (!active) {
-      markers.get(id)?.remove();
-      markers.delete(id);
-      layers.get(id)?.remove();
-      layers.delete(id);
+      if (markers.has(id)) {
+        map.removeLayer(markers.get(id));
+        markers.delete(id);
+      }
+      if (layers.has(id)) {
+        routesGroup.removeLayer(layers.get(id));
+        map.removeLayer(layers.get(id));
+        layers.delete(id);
+      }
       updateView();
       return;
     }
 
+    // Activar
     const dest =
       place.lat && place.lng
         ? { lat: place.lat, lng: place.lng }
         : place.query
-          ? fromCacheSmart(place.query) || (await geocodeSmart(place.query))
-          : null;
+        ? fromCacheSmart(place.query) || (await geocodeSmart(place.query))
+        : null;
     if (!dest) return;
 
-    const m = L.marker([dest.lat, dest.lng], { title: labelOf(place) }).addTo(
-      map
-    );
-
+    const m = L.marker([dest.lat, dest.lng], { title: labelOf(place) }).addTo(map);
     markers.set(id, m);
 
     let text = labelOf(place);
     let rt = null;
     if (useRouting) rt = await routeOSRM(base, dest).catch(() => null);
 
-    if (
-      rt &&
-      Number.isFinite(rt.distanceKm) &&
-      Number.isFinite(rt.durationMin)
-    ) {
+    let layer; // 👈 importante para setear en el Map de capas
+
+    if (rt && Number.isFinite(rt.distanceKm) && Number.isFinite(rt.durationMin)) {
       text += `<br><b>${rt.distanceKm.toFixed(1)} km</b> • ${Math.round(rt.durationMin)} ${dict.minApprox}`;
-      layer = L.geoJSON(rt.geojson, {
-        style: { color: brandColor, weight: 4, opacity: 0.95 },
-      }).addTo(map);
+      layer = L.geoJSON(rt.geojson, { style: { color: brandColor, weight: 4, opacity: 0.95 } });
     } else {
       const km = haversine(base, dest);
       text += `<br><b>${km.toFixed(1)} ${dict.kmStraight}</b>`;
@@ -534,15 +520,18 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
           [dest.lat, dest.lng],
         ],
         { color: brandColor, weight: 3 }
-      ).addTo(map);
+      );
     }
 
+    // agregar al grupo de rutas y registrar la capa
+    routesGroup.addLayer(layer);
     layers.set(id, layer);
+
     updateView();
     m.bindPopup(text).openPopup();
   }
 
-  // Mobile: botón y overlay
+  // --- Mobile: botón y overlay ---
   const panel = document.getElementById("poi-panel");
   const poiBtn = document.querySelector(".poi-btn");
   const closeBtn = panel?.querySelector(".poi-close");
@@ -551,10 +540,7 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
   if (mapWrap && poiBtn) {
     const io = new IntersectionObserver(
       ([e]) => {
-        poiBtn.classList.toggle(
-          "show",
-          e.isIntersecting && e.intersectionRatio > 0.15
-        );
+        poiBtn.classList.toggle("show", e.isIntersecting && e.intersectionRatio > 0.15);
       },
       { threshold: [0, 0.15, 1] }
     );
@@ -570,10 +556,10 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
     panel.classList.toggle("open", open);
     panel.setAttribute("aria-hidden", String(!open));
     if (open) panel.querySelector(".poi-search")?.focus();
+    // evita glitches de tiles al abrir/cerrar overlay
+    setTimeout(() => map?.invalidateSize(), 0);
   }
-  poiBtn?.addEventListener("click", () =>
-    openPanel(!panel?.classList.contains("open"))
-  );
+  poiBtn?.addEventListener("click", () => openPanel(!panel?.classList.contains("open")));
   closeBtn?.addEventListener("click", () => openPanel(false));
   addEventListener("keydown", (e) => {
     if (e.key === "Escape") openPanel(false);
@@ -583,13 +569,11 @@ const mapId = `leaflet-${Math.random().toString(36).slice(2)}`;
     if (e.target.closest?.(".chip")) openPanel(false);
   });
 
-  // Filtro: aplica a todos los buscadores (sidebar y overlay)
+  // Filtro (ambos buscadores)
   document.querySelectorAll(".poi-search").forEach((inp) => {
     inp.addEventListener("input", (e) => {
       const q = (e.target.value || "").toLowerCase();
-      // lista más cercana
-      const scope =
-        inp.closest(".poi-sidebar, .panel-inner, .poi-layout") || document;
+      const scope = inp.closest(".poi-sidebar, .panel-inner, .poi-layout") || document;
       scope.querySelectorAll(".chip[data-id]").forEach((btn) => {
         const t = (btn.textContent || "").toLowerCase();
         btn.style.display = t.includes(q) ? "block" : "none";
