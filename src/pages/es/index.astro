@@ -2,7 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import { getDict, type Locale } from "../../i18n/config";
 import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
-import { imagesIn, imageItemsIn } from '../../lib/gallery-data';
+import { imagesIn, imageItemsIn } from "../../lib/gallery-data";
 
 const { lang } = Astro.params as { lang: Locale };
 const t = getDict(lang);
@@ -13,10 +13,9 @@ import MapaTuristico from "../../components/MapaTuristico.astro";
 
 import logo from "../../../public/Logo-03.png";
 
-
 const items = imageItemsIn("Img_Hero");
 
-const slides = items.map(i => ({
+const slides = items.map((i) => ({
   src: i.imagen,
   alt: i.alt ?? i.caption ?? i.categoria,
   width: i.width,
@@ -26,13 +25,21 @@ const slides = items.map(i => ({
   capacity: i.capacity,
   model: i.model,
 }));
-
 ---
 
 <Base lang={lang} title={t.header.title}>
+  <HeroCarousel
+    images={slides}
+    locale="es"
+    autoplay={true}
+    intervalMs={4500}
+    aspectRatio="4/1"
+    maxHeightPx={560}
+  />
   <main class="container mx-auto p-6">
-    <!-- <HeroCarousel youtubeUrl="https://youtu.be/l8QO0xbI9Jk" /> -->
-    <HeroCarousel  images={slides} locale="es" autoplay={true} intervalMs={4500} aspectRatio="4/1" maxHeightPx={560}/>
+    <section>
+      <!-- <HeroCarousel youtubeUrl="https://youtu.be/l8QO0xbI9Jk" /> -->
+    </section>
     <section class="mt-12 px-4 mb-12 pb-12">
       <div class="max-w-3xl mx-auto text-center">
         <h3
@@ -41,7 +48,11 @@ const slides = items.map(i => ({
           Bienvenido a
         </h3>
 
-        <img class="w-[25rem] mx-[auto]" src={logo.src} alt="logo finca Casiana">
+        <img
+          class="w-[25rem] mx-[auto]"
+          src={logo.src}
+          alt="logo finca Casiana"
+        />
 
         <div
           class="mt-14 space-y-4 text-base md:text-xl leading-relaxed text-stone-600"
@@ -85,19 +96,34 @@ const slides = items.map(i => ({
           fijo={{ lat: -31.555666223254082, lng: -68.48057388609342 }}
         />
       </div>
-      <div class="mt-10 grid gap-4 md:grid-cols-3 items-start md:items-center ">
-          <p class="md:col-span-2 text-stone-700 text-lg md:text-end md:pr-16">
-            Consultá la disponibilidad en tiempo real y reservá en simples
-            pasos.
-          </p>
-          <a
-            href="/es/reservas"
-            class="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-white w-80"
-            style="background:#C76B4E"
-          >
-            Ver disponibilidad
-          </a>
-        </div>
+      <div class="mt-10 grid gap-4 md:grid-cols-3 items-start md:items-center">
+        <p class="md:col-span-2 text-stone-700 text-lg md:text-end md:pr-16">
+          Consultá la disponibilidad en tiempo real y reservá en simples pasos.
+        </p>
+        <a
+          href="/es/reservas"
+          class="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-white w-80"
+          style="background:#C76B4E"
+        >
+          Ver disponibilidad
+        </a>
+      </div>
     </section>
   </main>
+  <style is:global>
+    /* romper contenedores de layout si hace falta */
+    .hero {
+      inline-size: 100vw;
+      margin-inline: calc(50% - 50vw);
+      max-inline-size: 100vw;
+    }
+    :root,
+    body {
+      overflow-x: clip;
+    } /* evita scroll horizontal */
+    /* empuje del contenido por header fijo */
+    .push {
+      margin-top: var(--header-h, 72px);
+    }
+  </style>
 </Base>

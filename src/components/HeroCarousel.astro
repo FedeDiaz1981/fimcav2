@@ -201,6 +201,26 @@ const MEDIA_TYPE = HAS_YT ? "yt" : HAS_MP4 ? "mp4" : "none";
         )
       }
     </div>
+    <div class="controls">
+      <button class="arrow prev" type="button" aria-label="Anterior">‹</button>
+
+      <ol class="dots" role="tablist">
+        {
+          imgs.map((_, i) => (
+            <li>
+              <button
+                class={`dot ${i === 0 ? "is-active" : ""}`}
+                type="button"
+                data-idx={i}
+                aria-label={`Ir a la imagen ${i + 1}`}
+              />
+            </li>
+          ))
+        }
+      </ol>
+
+      <button class="arrow next" type="button" aria-label="Siguiente">›</button>
+    </div>
   </div>
 
   {
@@ -255,12 +275,44 @@ const MEDIA_TYPE = HAS_YT ? "yt" : HAS_MP4 ? "mp4" : "none";
     const INTERVAL = Math.max(800, Number(root.dataset.interval || 6000)); // ms
 
     // ---------- SI ES *IMAGEN* ----------
+    // ---------- SI ES *IMAGEN* ----------
     if (root.dataset.hasVideo !== "true") {
       const slides = Array.from(root.querySelectorAll(".slide"));
       if (!slides.length) return;
 
       const AUTOPLAY = root.dataset.autoplay === "true";
       const INTERVAL = Math.max(800, Number(root.dataset.interval || 6000));
+
+      // UI
+      const dotsWrap = root.querySelector(".dots");
+      const arrows = root.querySelector(".arrows");
+      const prevBtn = root.querySelector(".arrow.prev");
+      const nextBtn = root.querySelector(".arrow.next");
+
+      // Si no hay suficientes imágenes, ocultar controles
+      if (slides.length < 2) {
+        root.classList.add("hide-controls");
+        return;
+      }
+      root.classList.remove("hide-controls");
+
+      // Construir dots
+      dotsWrap.innerHTML = "";
+      slides.forEach((_, i) => {
+        const li = document.createElement("li");
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "dot";
+        b.setAttribute("aria-label", `Ir a la imagen ${i + 1}`);
+        b.addEventListener("click", () => {
+          idx = i;
+          setActive(idx);
+          restart();
+        });
+        li.appendChild(b);
+        dotsWrap.appendChild(li);
+      });
+      const dots = Array.from(dotsWrap.querySelectorAll(".dot"));
 
       let idx = 0;
       /** @type {number | null} */
@@ -272,9 +324,14 @@ const MEDIA_TYPE = HAS_YT ? "yt" : HAS_MP4 ? "mp4" : "none";
         slides.forEach((el, j) => {
           const on = j === i;
           el.classList.toggle("active", on);
-          el.classList.toggle("aos-animate", on); // muestra
-          el.classList.toggle("aos-init", !on); // evita opacity:0 de AOS
+          el.classList.toggle("aos-animate", on);
+          el.classList.toggle("aos-init", !on);
           el.setAttribute("aria-hidden", String(!on));
+        });
+        dots.forEach((d, j) => {
+          const on = j === i;
+          d.classList.toggle("is-active", on);
+          d.setAttribute("aria-current", on ? "true" : "false");
         });
       };
 
@@ -293,10 +350,38 @@ const MEDIA_TYPE = HAS_YT ? "yt" : HAS_MP4 ? "mp4" : "none";
           timer = null;
         }
       };
+      const restart = () => {
+        stop();
+        start();
+      };
 
+      // Flechas
+      prevBtn.addEventListener("click", () => {
+        idx = (idx - 1 + slides.length) % slides.length;
+        setActive(idx);
+        restart();
+      });
+      nextBtn.addEventListener("click", () => {
+        idx = (idx + 1) % slides.length;
+        setActive(idx);
+        restart();
+      });
+
+      // Teclado
+      root.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          prevBtn.click();
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          nextBtn.click();
+        }
+      });
+
+      // Hover + visibilidad
       setActive(0);
       start();
-
       root.addEventListener("mouseenter", () => {
         hover = true;
         stop();
@@ -437,287 +522,177 @@ const MEDIA_TYPE = HAS_YT ? "yt" : HAS_MP4 ? "mp4" : "none";
 </script>
 
 <style>
-  .hero {
-    position: relative;
-    overflow: hidden;
-    border-radius: 20px;
-    background: #000;
+  /* ===== HERO FULLSCREEN ===== */
+:root, body{ overflow-x: clip; } /* evita scroll horizontal por full-bleed */
 
-    /* 30% más angosto en desktop */
-    width: 70%;
-    margin: 0 auto;
+.hero{
+  position: relative;
+  width: 100vw;
+  height: 100dvh;          /* alto pantalla (mobile-safe) */
+  min-height: 100svh;
+  margin: 0;
+  border-radius: 0;
+  overflow: hidden;
+  background: #000;
+}
 
-    /* Más compacto para eliminar blanco abajo */
-    height: clamp(220px, 38vw, 420px);
-    min-height: 220px;
-    max-height: 420px;
+/* Contenedor interno ocupa todo */
+.rail{
+  position: relative;      /* necesario para posicionar controles */
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
-    
-  }
+/* Slides superpuestos con fade (AOS) + Ken Burns */
+.slides{ position: relative; width:100%; height:100%; }
+.slide{
+  position: absolute; inset: 0; margin: 0;
+  opacity: 0; transition: opacity .8s ease; will-change: opacity;
+}
+.slide.active{ opacity: 1; z-index: 2; }
 
-  .rail {
-    position: relative;
-    width: 100%;
-    aspect-ratio: var(--ratio, 16/9); /* 👈 todas se verán igual de altas */
-    max-height: var(--maxh, none); /* 👈 opcional límite superior */
-    overflow: hidden;
-    border-radius: 10px;
-  }
+/* Imagen/Video a pantalla completa */
+.video-wrap{ position:absolute; inset:0; overflow:hidden; background:#000; }
+.video-iframe,
+.video-el{
+  position:absolute; inset:0;
+  display:block; border:0; pointer-events:none;
+  width:100%; height:100%;
+}
+.video-el{ object-fit: cover; }
 
-  @media (max-width: 1024px) {
-    .hero {
-      width: 100%;
-    }
-  }
+/* Imagen */
+.slide img{
+  width:100%; height:100%;
+  object-fit: cover; object-position: 50% 50%;
+  display:block;
+  transform-origin: var(--ox,50%) var(--oy,50%);
+  animation: kenIn var(--ken,8000ms) ease-out forwards;
+}
+.slide:nth-child(1){ --ox:20%; --oy:20%; }
+.slide:nth-child(2){ --ox:80%; --oy:20%; }
+.slide:nth-child(3){ --ox:50%; --oy:50%; }
+.slide:nth-child(4){ --ox:20%; --oy:80%; }
+.slide:nth-child(5){ --ox:80%; --oy:80%; }
+.slide:nth-child(6){ --ox:50%; --oy:30%; }
 
-  /* contenedor */
-  .rail {
-    height: 100%;
-    position: relative;
-  }
+@keyframes kenIn{ from{ transform: scale(1.08);} to{ transform: scale(1);} }
+.slide[data-aos].aos-init{ opacity:0; transform:none; }
+.slide[data-aos].aos-animate{ opacity:1; transform:none; }
 
-  /* Slides superpuestos con fade (AOS) + Ken Burns */
-  .slides {
-    position: relative;
-    height: 100%;
-  }
-  .slide {
-    position: absolute;
-    inset: 0;
-    margin: 0;
-  }
+/* ===== Controles (flechas + dots) ===== */
+.controls{
+  position: absolute; inset: 0;
+  z-index: 60;                /* por encima de slides/buscador */
+  pointer-events: none;       /* sólo hijos reciben eventos */
+}
 
-  /* Video full-bleed y sin hover */
-  .video-wrap {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    background: #000;
-  }
-  .video-iframe,
-  .video-el {
-    position: absolute;
-    display: block;
-    border: 0;
-    pointer-events: none; /* sin controles nativos */
-  }
-  /* MP4 ocupa todo el contenedor, recorta como background cover */
-  .video-el {
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+/* Flechas */
+.arrow{
+  pointer-events: auto;
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 9999px;
+  border: 0; cursor: pointer;
+  background: rgba(0,0,0,.36); color:#fff; font-size:24px;
+  display: grid; place-items: center;
+  transition: background .15s ease, transform .15s ease;
+}
+.arrow.prev{ left: 12px; }
+.arrow.next{ right: 12px; }
+.arrow:hover{ background: rgba(0,0,0,.55); transform: translateY(-50%) scale(1.04); }
+.arrow:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
 
-  /* Botón activar sonido */
-  .unmute {
-    position: absolute;
-    left: 16px;
-    bottom: 16px;
-    z-index: 5;
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    border: 0;
-    border-radius: 12px;
-    padding: 10px 14px;
-    font-weight: 600;
-    backdrop-filter: blur(4px);
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-  }
-  .unmute:hover {
-    filter: brightness(1.1);
-  }
-  .unmute.is-hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
+/* Dots: ancho completo y centrados */
+.dots{
+  pointer-events: auto;
+  position: absolute; left: 0; right: 0;
+  bottom: clamp(10px, 2.5vh, 22px);
+  display: flex; justify-content: center; align-items: center;
+  gap: 10px; margin: 0; padding: 0 12px; list-style: none;
+}
+.dots li{ margin: 0; padding: 0; }
+.dot{
+  display: block;
+  width: 12px; height: 12px; border-radius: 9999px;
+  border: 0; cursor: pointer;
+  background: rgba(255,255,255,.85);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.35) inset;
+}
+.dot.is-active{
+  background:#fff;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.45) inset;
+}
+.dot:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
 
-  /* Slides + Ken Burns */
-  .slide {
-    opacity: 0;
-    transition: opacity 0.8s ease;
-    will-change: opacity;
-  }
-  .slide.active {
-    opacity: 1;
-    z-index: 2;
-  }
-  .slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transform-origin: var(--ox, 50%) var(--oy, 50%);
-    animation: kenIn var(--ken, 8000ms) ease-out forwards;
-  }
-  .slide:nth-child(1) {
-    --ox: 20%;
-    --oy: 20%;
-  }
-  .slide:nth-child(2) {
-    --ox: 80%;
-    --oy: 20%;
-  }
-  .slide:nth-child(3) {
-    --ox: 50%;
-    --oy: 50%;
-  }
-  .slide:nth-child(4) {
-    --ox: 20%;
-    --oy: 80%;
-  }
-  .slide:nth-child(5) {
-    --ox: 80%;
-    --oy: 80%;
-  }
-  .slide:nth-child(6) {
-    --ox: 50%;
-    --oy: 30%;
-  }
-  @keyframes kenIn {
-    from {
-      transform: scale(1.08);
-    }
-    to {
-      transform: scale(1);
-    }
-  }
-  .slide[data-aos].aos-init {
-    opacity: 0;
-    transform: none;
-  }
-  .slide[data-aos].aos-animate {
-    opacity: 1;
-    transform: none;
-  }
+/* Buscador debajo de los controles para no taparlos */
+.search-wrap{ z-index: 20; }
 
-  /* Buscador */
-  .search-wrap {
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: end center;
-    padding: 0 16px 16px;
-  }
-  .searchbar {
-    pointer-events: auto;
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    background: #fff;
-    border-radius: 14px;
-    box-shadow:
-      0 16px 30px rgba(0, 0, 0, 0.18),
-      0 4px 10px rgba(0, 0, 0, 0.06);
-    overflow: hidden;
-  }
-  .searchbar .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px 18px;
-    min-width: 220px;
-  }
-  .searchbar .field + .field {
-    border-left: 1px solid #ece8e6;
-  }
-  .field span {
-    font-size: 12px;
-    color: #7a6e66;
-  }
-  .field input,
-  .field select {
-    border: 1px solid #e6e2df;
-    border-radius: 10px;
-    padding: 10px 12px;
-    font: inherit;
-  }
-  .cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 28px;
-    background: var(--brand);
-    color: #fff;
-    text-decoration: none;
-    font-weight: 600;
-    min-width: 210px;
-  }
-  .cta:hover {
-    filter: brightness(0.97);
-  }
-  .cta-arrow {
-    margin-left: 10px;
-    font-size: 18px;
-    line-height: 1;
-  }
-  .cta.mobile {
-    display: none;
-  }
+@media (max-width:768px){
+  .arrow{ width: 36px; height: 36px; font-size: 20px; }
+  .dots{ gap: 8px; }
+}
 
-  @media (max-width: 768px) {
-    .hero {
-      height: clamp(200px, 52vw, 360px);
-    }
-    .searchbar {
-      display: none;
-    }
-    .cta.mobile {
-      display: inline-flex;
-      background: var(--brand);
-      color: #fff;
-      font-weight: 600;
-      padding: 10px 18px;
-      border-radius: 12px;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
-    }
-  }
+</style>
 
-  /* contenedor */
-  .rail {
-    height: 100%;
-    position: relative;
-    width: 100%;
-  } /* 👈 */
-  .slides {
-    position: relative;
-    height: 100%;
-    width: 100%;
-  } /* 👈 */
-  .slide {
-    position: absolute;
-    inset: 0;
-    margin: 0;
-  }
+<style is:global>
+/* Asegurá anclaje para posicionar la UI */
+.rail{ position: relative; }
 
-  /* Imagen: cubrir y centrar SIEMPRE */
-  .slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* 👈 cubre el ancho/alto del hero */
-    object-position: 50% 50%; /* 👈 foco al centro */
-    display: block;
-    transform-origin: 50% 50%; /* 👈 ken burns centrado */
-    animation: kenIn var(--ken, 8000ms) ease-out forwards;
-  }
+/* Overlay de controles */
+.controls{
+  position: absolute; inset: 0;
+  z-index: 60;
+  pointer-events: none;           /* sólo hijos reciben eventos */
+}
 
-  /* asegura visibilidad del activo aunque AOS meta opacity:0 */
-  .slide.active {
-    opacity: 1 !important;
-  }
+/* Flechas */
+.controls .arrow{
+  pointer-events: auto;
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 9999px;
+  border: 0; cursor: pointer;
+  background: rgba(0,0,0,.36); color:#fff; font-size:24px;
+  display: grid; place-items: center;
+  transition: background .15s ease, transform .15s ease;
+}
+.controls .arrow.prev{ left: 12px; }
+.controls .arrow.next{ right: 12px; }
+.controls .arrow:hover{ background: rgba(0,0,0,.55); transform: translateY(-50%) scale(1.04); }
+.controls .arrow:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
 
-  .slides,
-  .slide {
-    width: 100%;
-    height: 100%;
-  }
-  .slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* cubre el contenedor */
-    object-position: 50% 50%; /* foco al centro */
-  }
+/* Dots centrados y con ancho/alto explícitos */
+.controls .dots{
+  pointer-events: auto;
+  position: absolute; left: 0; right: 0;
+  bottom: clamp(10px, 2.5vh, 22px);
+  display: flex; justify-content: center; align-items: center;
+  gap: 10px; margin: 0; padding: 0 12px; list-style: none;
+}
+.controls .dots li{ margin: 0; padding: 0; }
+
+/* 👇 FORZAMOS tamaño + display por si un reset hace inline o all:unset */
+.controls .dot{
+  display: inline-block;
+  inline-size: 12px;           /* width */
+  block-size: 12px;            /* height */
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(255,255,255,.85);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.35) inset;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  flex-shrink: 0;              /* que nunca colapse a 0 */
+}
+.controls .dot.is-active{
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.45) inset;
+}
+.controls .dot:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Si el buscador tapa, que quede debajo */
+.search-wrap{ z-index: 20; }
 </style>

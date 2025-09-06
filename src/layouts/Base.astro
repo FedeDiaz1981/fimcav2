@@ -37,16 +37,15 @@ const { title } = Astro.props as { title?: string };
     <Header lang={locale} />
     <slot />
     <WhatsAppButton
-      <WhatsAppButton
       phone="5492644570609"
       position="br"
       label=""
     />
-    />
+    
     <Footer
       lang={locale}
       instagramHandle="@fincacasiana"
-      phoneHref="https://wa.me5492644570609"
+      phoneHref="https://api.whatsapp.com/send?phone=5492644570609&#038;text=%C2%A1Hola%20Me%20gustar%C3%ADa%20saber%20mas%20sobre%20el%20alojamiento%20entre%20semana%20en%20San%20Juan"
     />
   </body>
 </html>

@@ -29,9 +29,17 @@ const slides = items.map(i => ({
 ---
 
 <Base lang={lang} title={t.header.title}>
+  <HeroCarousel
+    images={slides}
+    locale="es"
+    autoplay={true}
+    intervalMs={4500}
+    aspectRatio="4/1"
+    maxHeightPx={560}
+  />
   <main class="container mx-auto p-6">
-    <!-- <HeroCarousel youtubeUrl="https://youtu.be/l8QO0xbI9Jk" /> -->
-     <HeroCarousel  images={slides} locale="es" autoplay={true} intervalMs={4500}/>
+    <!-- <HeroCarousel youtubeUrl="https://youtu.be/l8QO0xbI9Jk" />
+     <HeroCarousel  images={slides} locale="es" autoplay={true} intervalMs={4500}/> -->
 
     <section class="mt-12 px-4 mb-12 pb-12">
       <div class="max-w-3xl mx-auto text-center">
@@ -104,4 +112,20 @@ const slides = items.map(i => ({
       </div>
     </section>
   </main>
+   <style is:global>
+    /* romper contenedores de layout si hace falta */
+    .hero {
+      inline-size: 100vw;
+      margin-inline: calc(50% - 50vw);
+      max-inline-size: 100vw;
+    }
+    :root,
+    body {
+      overflow-x: clip;
+    } /* evita scroll horizontal */
+    /* empuje del contenido por header fijo */
+    .push {
+      margin-top: var(--header-h, 72px);
+    }
+  </style>
 </Base>

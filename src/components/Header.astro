@@ -1,35 +1,40 @@
 ---
-import LanguageSwitcher from '../components/LanguageSwitcher.astro';
-import logo from "../../public/Logo-03.png";
-import { locales, defaultLocale, type Locale, getDict } from '../i18n/config';
+import LanguageSwitcher from "../components/LanguageSwitcher.astro";
+import logoSolid from "../../public/Logo-03.png"; // fondo blanco
+import logoClear from "../../public/Logo-01.png"; // header transparente
+import { locales, defaultLocale, type Locale, getDict } from "../i18n/config";
 
 type Props = { lang?: Locale };
 const { lang } = Astro.props as Props;
 
-const seg1 = Astro.url.pathname.split('/')[1] as Locale;
+const seg1 = Astro.url.pathname.split("/")[1] as Locale;
 const locale: Locale =
-  (lang && (locales as readonly string[]).includes(lang) ? lang :
-   ((locales as readonly string[]).includes(seg1) ? seg1 : defaultLocale));
+  lang && (locales as readonly string[]).includes(lang)
+    ? lang
+    : (locales as readonly string[]).includes(seg1)
+      ? seg1
+      : defaultLocale;
 
 const t = getDict(locale);
 
 const path = Astro.url.pathname;
-const currency = 'ARS';
-const homeHref     = `/${locale}/`;
-const cabanasHref  = `/${locale}/cabañas`;
-const salonHref    = `/${locale}/salon`;
+const currency = "ARS";
+const homeHref = `/${locale}/`;
+const cabanasHref = `/${locale}/cabañas`;
+const salonHref = `/${locale}/salon`;
 const reservasHref = `/${locale}/reservas`;
 
 const LABELS = {
-  home: t.nav?.home ?? (locale === 'es' ? 'Inicio' : 'Home'),
-  cabins: (t as any)?.nav?.cabins ?? (locale === 'es' ? 'Cabañas' : 'Cabins'),
-  hall: (t as any)?.nav?.hall ?? (locale === 'es' ? 'Salón' : 'Hall'),
-  bookings: (t as any)?.nav?.bookings ?? (locale === 'es' ? 'Reservas' : 'Bookings'),
+  home: t.nav?.home ?? (locale === "es" ? "Inicio" : "Home"),
+  cabins: (t as any)?.nav?.cabins ?? (locale === "es" ? "Cabañas" : "Cabins"),
+  hall: (t as any)?.nav?.hall ?? (locale === "es" ? "Salón" : "Hall"),
+  bookings:
+    (t as any)?.nav?.bookings ?? (locale === "es" ? "Reservas" : "Bookings"),
 };
 
 const isActive = (href: string) => {
-  const n = (s: string) => s.replace(/\/+$/, '');
-  return n(Astro.url.pathname) === n(href) ? 'active' : '';
+  const n = (s: string) => s.replace(/\/+$/, "");
+  return n(Astro.url.pathname) === n(href) ? "active" : "";
 };
 ---
 
@@ -37,31 +42,64 @@ const isActive = (href: string) => {
   <div class="site-header__inner">
     <!-- Logo -->
     <a class="logo" href={homeHref}>
-      <img src={logo.src} alt="Logo" />
+      <img
+        class="logo-img is-clear"
+        src="/Logo-01.png"
+        alt="Finca Casiana"
+        loading="eager"
+      />
+      <img
+        class="logo-img is-solid"
+        src="/Logo-03.png"
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+      />
     </a>
 
     <!-- Nav desktop -->
     <nav class="nav" aria-label="Main">
       <ul>
-        <li><a class={isActive(homeHref)}     href={homeHref}>{LABELS.home}</a></li>
-        <li><a class={isActive(cabanasHref)}  href={cabanasHref}>{LABELS.cabins}</a></li>
-        <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li>
-        <li><a class={isActive(reservasHref)} href={reservasHref}>{LABELS.bookings}</a></li>
+        <li><a class={isActive(homeHref)} href={homeHref}>{LABELS.home}</a></li>
+        <li>
+          <a class={isActive(cabanasHref)} href={cabanasHref}>{LABELS.cabins}</a
+          >
+        </li>
+        <li>
+          <a class={isActive(salonHref)} href={salonHref}>{LABELS.hall}</a>
+        </li>
+        <li>
+          <a class={isActive(reservasHref)} href={reservasHref}
+            >{LABELS.bookings}</a
+          >
+        </li>
       </ul>
     </nav>
 
     <!-- Derecha -->
     <div class="actions">
-      <LanguageSwitcher locale={locale} path={path} /> 
-      <button class="pill hidden" type="button" data-currency
-        aria-label={t.ui?.changeCurrency ?? (locale === 'es' ? 'Cambiar moneda' : 'Change Currency')}>
+      <LanguageSwitcher locale={locale} path={path} />
+      <button
+        class="pill hidden"
+        type="button"
+        data-currency
+        aria-label={t.ui?.changeCurrency ??
+          (locale === "es" ? "Cambiar moneda" : "Change Currency")}
+      >
         {currency}
       </button>
     </div>
 
     <!-- Mobile hamburger -->
-    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
-      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    <button
+      class="hamburger"
+      id="hamburger"
+      aria-label="Open menu"
+      aria-expanded="false"
+      aria-controls="mobileMenu"
+    >
+      <span class="bar"></span><span class="bar"></span><span class="bar"
+      ></span>
     </button>
   </div>
 
@@ -69,97 +107,339 @@ const isActive = (href: string) => {
   <div class="mobile" id="mobileMenu">
     <nav aria-label="Mobile">
       <ul>
-        <li><a class={isActive(homeHref)}     href={homeHref}>{LABELS.home}</a></li>
-        <li><a class={isActive(cabanasHref)}  href={cabanasHref}>{LABELS.cabins}</a></li>
-        <li><a class={isActive(salonHref)}    href={salonHref}>{LABELS.hall}</a></li> 
-        <li><a class={isActive(reservasHref)} href={reservasHref}>{LABELS.bookings}</a></li>
+        <li><a class={isActive(homeHref)} href={homeHref}>{LABELS.home}</a></li>
+        <li>
+          <a class={isActive(cabanasHref)} href={cabanasHref}>{LABELS.cabins}</a
+          >
+        </li>
+        <li>
+          <a class={isActive(salonHref)} href={salonHref}>{LABELS.hall}</a>
+        </li>
+        <li>
+          <a class={isActive(reservasHref)} href={reservasHref}
+            >{LABELS.bookings}</a
+          >
+        </li>
 
-        <li style="display:none !important; padding:12px 4px; display:flex; gap:12px">
-          <button class="pill hidden" type="button" data-currency>{currency}</button>
+        <li
+          style="display:none !important; padding:12px 4px; display:flex; gap:12px"
+        >
+          <button class="pill hidden" type="button" data-currency
+            >{currency}</button
+          >
         </li>
       </ul>
     </nav>
-    <LanguageSwitcher locale={locale} path={path} /> 
+    <LanguageSwitcher locale={locale} path={path} />
   </div>
 </header>
 
 <style>
-/* ======= PALETA (de Finca) ======= */
-.site-header{
-  --finca:    #505c27; /* base */
-  --finca-700:#343c19;
-  --finca-800:#242912;
-  --accent:   #6ec1e4;
-  --text:     #373a3e; /* neutralish-700 */
-  --muted:    #a2a4a8; /* neutralish-400 */
-  --border:   #d3d6c9; /* finca-200 */
-  --hover:    #f1f2ee; /* finca-50 */
-}
+  /* ======= PALETA / VARS ======= */
+  .site-header {
+    --finca: #505c27;
+    --finca-700: #343c19;
+    --finca-800: #242912;
+    --accent: #6ec1e4;
+    --text: #373a3e;
+    --muted: #a2a4a8;
+    --border: #d3d6c9;
+    --hover: #f1f2ee;
 
-/* ======= Layout ======= */
-.site-header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);z-index:50}
-.site-header__inner{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px}
-.logo img{height:42px}
+    /* Texto cuando el header es transparente */
+    --hdr-fg: #fff;
+    --hdr-underline: rgba(255, 255, 255, 0.9);
 
-/* ======= Nav ======= */
-.nav{display:flex;flex:1;justify-content:center}
-.nav ul{display:flex;gap:40px;list-style:none;margin:0;padding:0}
-.nav a{
-  background:none;border:0;cursor:pointer;text-decoration:none;
-  color:var(--text);padding:6px 0;transition:color .12s ease, box-shadow .12s ease;
-}
-.nav a.active,.nav a:hover{
-  color:var(--finca-800);
-  box-shadow:inset 0 -2px 0 0 var(--finca-800);
-}
-.nav a:focus-visible{
-  outline:2px solid var(--accent); outline-offset:2px; border-radius:2px;
-}
+    /* Tamaño logo (desktop por defecto) */
+    --logo-h: 42px;
+    --logo-w: 160px;
+  }
 
-/* ======= Acciones ======= */
-.actions{display:flex;gap:12px}
-.pill{border:0;background:transparent;cursor:pointer;padding:6px 10px;border-radius:999px;color:var(--finca-800)}
-.pill:hover{background:var(--hover)}
+  /* ======= LAYOUT BASE ======= */
+  .site-header {
+    --header-h: 72px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: transparent;
+    border-bottom: 1px solid transparent;
+    transition:
+      background-color 0.18s,
+      border-color 0.18s,
+      box-shadow 0.18s,
+      color 0.18s;
+    color: var(--hdr-fg);
+  }
 
-/* ======= Hamburguesa ======= */
-.hamburger{display:none;border:0;background:transparent;cursor:pointer;width:36px;height:36px;padding:6px}
-.hamburger .bar{display:block;height:2px;background:var(--finca-800);margin:6px 0}
+  .site-header__inner {
+    height: var(--header-h);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 12px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+  }
 
-/* ======= Mobile ======= */
-@media (max-width:1024px){
-  .nav,.actions{display:none}
-  .hamburger{display:block}
-  .site-header__inner{padding:12px 16px}
-  .logo img{height:34px}
-  .site-header.is-open .mobile{display:block}
-}
-.mobile{display:none;position:fixed;inset:64px 0 0 0;background:#fff;padding:16px;border-top:1px solid var(--border)}
-.mobile nav ul{list-style:none;margin:0;padding:0}
-.mobile nav li{border-bottom:1px solid var(--border)}
-.mobile nav a,.mobile nav button{
-  display:flex;justify-content:space-between;align-items:center;width:100%;
-  padding:14px 4px;background:none;border:0;color:var(--text);
-}
-.mobile nav a:hover{background:var(--hover)}
+  /* Logo (bloque con ancho/alto fijo) */
+  .logo {
+    justify-self: start;
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    inline-size: var(--logo-w);
+    block-size: var(--logo-h);
+  }
+  .logo .logo-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+  /* Transparente (tope): se ve Logo-01 (is-clear) */
+  .logo .logo-img.is-clear {
+    opacity: 1;
+  }
+  .logo .logo-img.is-solid {
+    opacity: 0;
+  }
+
+  /* Nav centrado + acciones a la derecha */
+  .nav {
+    justify-self: center;
+  }
+  .actions {
+    justify-self: end;
+    display: flex;
+    gap: 12px;
+  }
+
+  /* ======= NAV ======= */
+  .nav ul {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .nav a {
+    color: var(--hdr-fg);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 6px 0;
+    transition:
+      color 0.12s ease,
+      box-shadow 0.12s ease;
+  }
+  .nav a.active,
+  .nav a:hover {
+    color: var(--hdr-fg);
+    box-shadow: inset 0 -2px 0 0 var(--hdr-underline);
+  }
+  .nav a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Acciones / pill / hamburguesa en transparente */
+  .pill {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 999px;
+    color: var(--hdr-fg);
+  }
+  .pill:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .hamburger {
+    display: none;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    grid-column: 3;
+    justify-self: end;
+  }
+  .hamburger .bar {
+    display: block;
+    height: 2px;
+    margin: 6px 0;
+    background: var(--hdr-fg);
+  }
+  .actions :is(a, button) {
+    color: var(--hdr-fg);
+  }
+
+  /* ======= HEADER SÓLIDO (scrolleado o menú abierto) ======= */
+  .site-header.is-solid,
+  .site-header.is-open {
+    background: #fff;
+    border-bottom-color: var(--border);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+    --hdr-fg: var(--text);
+    --hdr-underline: var(--finca-800);
+  }
+  /* En sólido se muestra Logo-03 (is-solid) */
+  .site-header.is-solid .logo .logo-img.is-clear,
+  .site-header.is-open .logo .logo-img.is-clear {
+    opacity: 0;
+  }
+  .site-header.is-solid .logo .logo-img.is-solid,
+  .site-header.is-open .logo .logo-img.is-solid {
+    opacity: 1;
+  }
+
+  /* ======= MOBILE ======= */
+  @media (max-width: 1024px) {
+    .nav,
+    .actions {
+      display: none;
+    }
+    .hamburger {
+      display: block;
+      position: relative;
+      z-index: 130;
+    } /* por encima del sheet */
+    .site-header__inner {
+      grid-template-columns: auto 1fr auto;
+    }
+    /* logo más chico */
+    .site-header {
+      --logo-h: 34px;
+      --logo-w: 130px;
+    }
+    /* cuando está abierto, mostramos el panel */
+    .site-header.is-open .mobile {
+      display: block;
+    }
+  }
+
+  /* Panel del menú mobile (oculto por defecto) */
+  .mobile {
+    display: none;
+    position: fixed;
+    top: var(--header-h); /* EXACTO bajo el header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 120; /* por encima del header (100) */
+    background: #fff;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    overflow: auto; /* scroll interno si hace falta */
+  }
+  .mobile nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .mobile nav li {
+    border-bottom: 1px solid var(--border);
+  }
+  .mobile nav a,
+  .mobile nav button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 14px 4px;
+    background: none;
+    border: 0;
+    color: var(--text);
+  }
+  .mobile nav a:hover {
+    background: var(--hover);
+  }
+
+  /* Evitar scroll del body cuando el menú está abierto */
+  html.no-scroll,
+  body.no-scroll {
+    overflow: hidden;
+  }
+
+  /* ===== Sombras/vidrio detrás de LOGO y NAV cuando el header es transparente ===== */
+  .nav {
+    position: relative;
+  } /* el logo ya es relative en tu CSS */
+
+  /* efecto vidrio sólo si NO está .is-solid ni .is-open */
+  .site-header:not(.is-solid):not(.is-open) .logo::before,
+  .site-header:not(.is-solid):not(.is-open) .nav::before {
+    content: "";
+    position: absolute;
+    z-index: -1; /* queda detrás del contenido */
+    inset: -6px -10px; /* margen alrededor (no afecta layout) */
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.28); /* fallback si no hay blur */
+    /* glass/blur (cuando el navegador lo soporta) */
+    -webkit-backdrop-filter: blur(8px) saturate(110%);
+    backdrop-filter: blur(8px) saturate(110%);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  /* si querés un poco más de separación del “chip” del logo */
+  .site-header:not(.is-solid):not(.is-open) .logo {
+    margin-inline-start: 2px;
+  }
+  .site-header:not(.is-solid):not(.is-open) .nav {
+    padding-inline: 2px;
+  }
 </style>
 
-<script>
-const header = document.getElementById('siteHeader');
-const burger  = document.getElementById('hamburger');
-burger?.addEventListener('click', () => {
-  //@ts-ignore
-  const open = header.classList.toggle('is-open');
-  burger.setAttribute('aria-expanded', String(open));
-});
+<script is:inline>
+(() => {
+  const header = document.getElementById('siteHeader');
+  const burger = document.getElementById('hamburger');
+  const mobile = document.getElementById('mobileMenu');
 
-// moneda simple en localStorage
-const curBtns = document.querySelectorAll('[data-currency]');
-curBtns.forEach(b=>{
-  b.textContent = localStorage.getItem('currency') || b.textContent || 'ARS';
-  b.addEventListener('click',()=>{
-    const next = b.textContent === 'ARS' ? 'USD' : 'ARS';
-    localStorage.setItem('currency', next);
-    document.querySelectorAll('[data-currency]').forEach(x=>x.textContent = next);
+  function setOpen(open){
+    header.classList.toggle('is-open', open);
+    burger?.setAttribute('aria-expanded', String(open));
+    document.documentElement.classList.toggle('no-scroll', open);
+    // si está abierto, lo consideramos "sólido" para legibilidad
+    header.classList.toggle('is-solid', open ? true : (window.scrollY >= 2));
+  }
+
+  burger?.addEventListener('click', (e) => {
+    e.preventDefault();
+    setOpen(!header.classList.contains('is-open'));
   });
-});
+
+  // Cerrar al tocar links del menú
+  mobile?.querySelectorAll('a,button').forEach(el => {
+    el.addEventListener('click', () => setOpen(false));
+  });
+
+  // Cerrar si se pasa a desktop
+  const mq = window.matchMedia('(min-width: 1025px)');
+  (mq.addEventListener ? mq.addEventListener : mq.addListener).call(mq, 'change', e => {
+    if (e.matches) setOpen(false);
+  });
+
+  // Estado transparente/sólido según scroll
+  function applyHeaderState(){
+    const atTop = (window.scrollY || 0) < 2;
+    if (!header.classList.contains('is-open')) {
+      header.classList.toggle('is-solid', !atTop);
+    }
+  }
+  applyHeaderState();
+  window.addEventListener('scroll', applyHeaderState, { passive:true });
+  window.addEventListener('resize', applyHeaderState);
+})();
 </script>
+
