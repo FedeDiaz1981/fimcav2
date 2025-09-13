@@ -1,63 +1,45 @@
 <?php
-// ---- CORS DEV: pegar inmediatamente aquí (desarrollo) ----
-// Permite cualquier origen (útil para pruebas locales). En producción NO uses "*", pon tu dominio.
-if (true) {
-  // Permitir cualquier origen (dev)
-  header('Access-Control-Allow-Origin: *');
-  header('Access-Control-Allow-Methods: POST, OPTIONS');
-  header('Access-Control-Allow-Headers: Content-Type, Accept');
-  header('Access-Control-Max-Age: 86400');
-  // No credentials en dev
-}
-
-// Responder preflight y terminar rápido
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-  http_response_code(204);
-  exit;
-}
-// ---- /CORS DEV ----
 declare(strict_types=1);
 
+// ---------------------------------------------
+// contact.php
+// Endpoint para recibir reservas (JSON o form-data)
+// Asegurate de guardar sin BOM (UTF-8 without BOM).
+// ---------------------------------------------
+
+// Content type JSON
 header('Content-Type: application/json; charset=utf-8');
 
-// ===== CORS (pegar/reemplazar aquí) =====
+// ----------------- CORS -----------------------
+// En producción reemplazá/ajustá los orígenes permitidos.
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-
 $allowed = [
   'http://localhost:4321',
   'http://127.0.0.1:4321',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:8000',
+  'http://localhost:8000',    // si probás con php -S
   'http://127.0.0.1:8000',
-  // 'https://tu-dominio.com', // prod: agregá tu dominio aquí
+  // 'https://tu-dominio.com', // <- poner tu dominio en producción (https)
 ];
 
-// Si viene Origin, comprobar y enviar headers CORS apropiados
 if ($origin) {
-  // permitir explícitamente los orígenes listados
-  $ok = in_array($origin, $allowed, true);
-  // además permitir cualquier localhost con puerto (útil en dev)
-  if (!$ok && preg_match('#^https?://localhost(:\d+)?$#', $origin)) $ok = true;
-
-  if ($ok) {
+  if (in_array($origin, $allowed, true) || preg_match('#^https?://localhost(:\d+)?$#', $origin)) {
     header("Access-Control-Allow-Origin: $origin");
     header('Vary: Origin');
     header('Access-Control-Allow-Methods: POST, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Accept');
     header('Access-Control-Allow-Credentials: false');
+    header('Access-Control-Max-Age: 86400');
   }
 }
 
-// Responder preflight OPTIONS (asegurate de que los headers ya fueron enviados arriba)
+// Responder preflight OPTIONS y terminar
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-  // opcional: cachear preflight
-  header('Access-Control-Max-Age: 86400');
   http_response_code(204);
   exit;
 }
+// ----------------- /CORS ---------------------
 
-
+// Sólo POST a partir de aquí
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   http_response_code(405);
   echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
@@ -70,7 +52,7 @@ if ($xff && strpos($xff, ',') !== false) { $xff = trim(explode(',', $xff)[0]); }
 $ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $xff ?: ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
 
 $window = 15 * 60; // 15 min
-$max = 30; // máximo solicitudes por ventana (ajustá si querés)
+$max = 30; // máximo solicitudes por ventana
 $bucketDir = __DIR__ . '/.ratelimit';
 if (!is_dir($bucketDir)) @mkdir($bucketDir, 0700);
 $bucketFile = $bucketDir . '/' . preg_replace('/[^a-zA-Z0-9_.-]/', '_', $ip);
@@ -91,7 +73,8 @@ $slot['count'] = (int)$slot['count'] + 1;
 @file_put_contents($bucketFile, json_encode($slot), LOCK_EX);
 
 // --- Cargar config ---
-/** @var array $config */
+// Ruta actual: config.php en el mismo directorio que contact.php
+// Si movés config.php fuera de public, reemplazá por __DIR__ . '/../config.php'
 $configFile = __DIR__ . '/config.php';
 if (!is_file($configFile)) {
   http_response_code(500);
@@ -124,7 +107,7 @@ $telefono = trim((string)($input['telefono'] ?? ''));
 $cabinId  = trim((string)($input['cabinId']  ?? $input['cabaña'] ?? $input['cabin'] ?? ''));
 $startISO = trim((string)($input['startISO'] ?? ''));
 $endISO   = trim((string)($input['endISO']   ?? ''));
-$days     = (int)($input['days'] ?? $input['nights'] ?? 0); // compatibilidad con nombre anterior
+$days     = (int)($input['days'] ?? $input['nights'] ?? 0); // compatibilidad
 $notes    = trim((string)($input['notes'] ?? ''));
 
 // Validaciones básicas
@@ -141,7 +124,7 @@ if (strlen($notes) > 8000) {
   exit;
 }
 
-// Generar array de fechas desde start (incl) hasta end (excl) — el componente usa end exclusivo.
+// Generar array de fechas desde start (incl) hasta end (excl)
 function parse_iso_date(string $s) : ?DateTime {
   $d = DateTime::createFromFormat('!Y-m-d', $s);
   return $d ?: null;
@@ -172,13 +155,39 @@ $safe = static function(string $s): string {
   return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 };
 
-// --- PHPMailer ---
-require __DIR__ . '/public/phpmailer/src/PHPMailer.php';
-require __DIR__ . '/public/phpmailer/src/SMTP.php';
-require __DIR__ . '/public/phpmailer/src/Exception.php';
+// --- PHPMailer: intentar localizar en varios lugares ---
+$possible = [
+  __DIR__ . '/phpmailer/src/PHPMailer.php',         // recomendado: phpmailer/ junto a contact.php
+  __DIR__ . '/public/phpmailer/src/PHPMailer.php',  // si mantuviste dentro de public/
+  __DIR__ . '/../phpmailer/src/PHPMailer.php',      // si moviste phpmailer un nivel arriba (public_html case)
+];
+
+$found = false;
+foreach ($possible as $p) {
+  if (is_file($p)) {
+    // deducir base dir de src
+    $base = dirname($p, 1); // .../phpmailer/src
+    require $base . '/PHPMailer.php';
+    require $base . '/SMTP.php';
+    require $base . '/Exception.php';
+    $found = true;
+    break;
+  }
+}
+
+if (!$found) {
+  // Responder JSON en vez de provocar fatal con require
+  http_response_code(500);
+  echo json_encode([
+    'ok' => false,
+    'error' => 'PHPMailer no encontrado. Colocá la carpeta phpmailer/src/ en una de las rutas: ' . implode(', ', $possible),
+  ]);
+  exit;
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
 
 function buildMailer(array $config, bool $useStartTLS = false, bool $debug = false): PHPMailer {
   $mail = new PHPMailer(true);
@@ -217,7 +226,7 @@ function buildMailer(array $config, bool $useStartTLS = false, bool $debug = fal
 
 // Construir cuerpo del mail
 $cabinLabel = $cabinId !== '' ? $safe($cabinId) : '-';
-$humanDates = implode(', ', array_map(function($d){ return $d; }, $dates));
+$humanDates = implode(', ', $dates);
 $htmlDatesList = '<ul>' . implode('', array_map(function($d) use ($safe) { return '<li>' . $safe($d) . '</li>'; }, $dates)) . '</ul>';
 
 $subject = sprintf('Nueva reserva: %s - %s (%d días)', $safe($nombre), $cabinLabel, count($dates));

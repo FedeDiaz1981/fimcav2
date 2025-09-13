@@ -557,7 +557,6 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
           return;
         }
 
-        // Preparar payload
         const payload = {
           nombre: fName.value.trim(),
           email: fMail.value.trim(),
@@ -566,10 +565,9 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
           startISO,
           endISO,
           days: nightsCount(startISO, endISO),
-          notes: "", // si querés agregar un campo notas en el form ponlo y enviá aquí
+          notes: "",
         };
 
-        // Indicar envío
         submitBtn.setAttribute("disabled", "true");
         submitBtn.textContent = "Enviando...";
 
@@ -579,12 +577,25 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
+
+          const contentType = res.headers.get("content-type") || "";
+
+          // Si la respuesta no es JSON, saca el texto y muéstralo (útil para debug)
+          if (contentType.includes("application/json")) {
+            const text = await res.text();
+            console.error("Respuesta no-JSON del servidor:", text);
+            hintEl.textContent =
+              "Error del servidor: " + (text.slice(0, 200) || "ver logs");
+            return;
+          }
+
           const json = await res.json();
+
           if (res.ok && json.ok) {
-            // éxito: mostrar modal / limpiar si querés
             openModal();
           } else {
             hintEl.textContent = json?.error || "Error al enviar";
+            console.warn("Error response JSON:", json);
           }
         } catch (err) {
           console.error("Enviar reserva error", err);
