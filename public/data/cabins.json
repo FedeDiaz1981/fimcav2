@@ -1,0 +1,8 @@
+[
+  {"id":"c1","name":"Cabaña 1","capacity":6},
+  {"id":"c2","name":"Cabaña 2","capacity":6},
+  {"id":"c3","name":"Cabaña 3","capacity":4},
+  {"id":"c4","name":"Cabaña 4","capacity":4},
+  {"id":"c5","name":"Cabaña 5","capacity":4},
+  {"id":"c6","name":"Cabaña 6","capacity":4}
+]

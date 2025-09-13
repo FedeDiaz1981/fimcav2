@@ -17,7 +17,6 @@ const t = getDict(lang);
 import CarouselGallery from "../../components/CarouselGallery.astro";
 import type { ImageItem, GalleryData } from "../../types/gallery"; // si separaste los tipos
 
-
 // helper para mapear a tu ImageItem
 const toItem = ({ imagen, caption, width, height }: AlbumItem) => ({
   imagen,
@@ -43,144 +42,165 @@ const dataNoConfort = { Interiores: noConfort } satisfies Partial<
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
     <section class="md:mt-[8em]">
-    <section class="md:mt-[5em]">
-      <div class="max-w-5xl mx-auto">
-        <!-- <HeroCarousel
+      <section class="md:mt-[5em]">
+        <div class="max-w-5xl mx-auto">
+          <!-- <HeroCarousel
           youtubeUrl="https://www.youtube.com/watch?v=RQxHroh8WLU"
           posterSrc=""
           autoplay
           preferSoundAutoplay={true}
         /> -->
-        
-        <h2
-          class="text-3xl md:text-[2.7rem] font-semibold text-stone-900 text-center pt-[5rem] hidden"
-        >
-          Equipped cabins, ready all year round
-        </h2>
-        <p class="mt-8 text-base md:text-[2.6rem] leading-relaxed text-stone-600">
-          At Finca Casiana, we offer fully equipped cabins ready to welcome you at any time of year.
-        </p>
 
-        <!-- Features -->
-        <!-- Amenities-style -->
-        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-          <!-- Naturaleza -->
-          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
-            <span class="text-stone-400 text-2xl"> 🌳 </span>
-            <div>
-              <h3
-                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
-              >
-                Surrounded by nature and tranquility
-              </h3>
-            </div>
-          </article>
-
-          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
-            <span class="text-stone-400 text-2xl"> 🛏️ </span>
-            <div>
-              <h3
-                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
-              >
-                Amenities
-              </h3>
-              <p
-                class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2"
-              >
-                Air conditioning, heating, fully equipped kitchen, bed linen, free Wi-Fi, and a SMART TV with satellite dish.
-              </p>
-            </div>
-          </article>
-          <!-- Accesibilidad -->
-          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
-            <span class="text-stone-400 mt-1">
-              <img
-                src={logo_d.src}
-                alt="logo discapacidad"
-                class="w-[1.6rem]"
-              />
-            </span>
-            <div>
-              <h3
-                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
-              >
-                Adapted for people with reduced mobility.
-              </h3>
-            </div>
-          </article>
-          <!-- Pet Friendly -->
-          <article class="grid grid-cols-[28px_1fr] items-start gap-3">
-            <span class="text-stone-400 text-2xl"> 🐾 </span>
-            <div>
-              <h3
-                class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
-              >
-                Pet Friendly Accommodation
-              </h3>
-              <p
-                class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2"
-              >
-                Common areas: Pool with perimeter fence, green spaces, private garages, grill and wood-burning oven, soccer field, and our multi-purpose room (optional for social and corporate events)
-              </p>
-            </div>
-          </article>
-        </div>
-
-        <h2
-          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
-          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
-        >
-          CABINS FOR 3 PEOPLE
-        </h2>
-
-        <CarouselGallery data={dataConfort} intervalMs={3800} groupBy="cabin" />
-
-        <h2
-          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
-          class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
-        >
-          CABIN FOR 5 OR 6 PEOPLE
-        </h2>
-
-        <CarouselGallery
-          data={dataNoConfort}
-          intervalMs={3800}
-          groupBy="cabin"
-        />
-
-        <div class="my-12 grid gap-3 md:grid-cols-3">
-          <div class="flex items-center gap-3">
-            <span class="text-emerald-600">✅</span>
-            <span class="text-stone-700">Online reservations</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-emerald-600">✅</span>
-            <span class="text-stone-700"
-              >Payment in cash or by transfer</span
-            >
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-emerald-600">✅</span>
-            <span class="text-stone-700"
-              >Direct attention via WhatsApp for inquiries</span
-            >
-          </div>
-        </div>
-
-        <!-- CTA / Pagos / Contacto -->
-        <div class="mt-10 grid gap-4 md:grid-cols-3 items-start">
-          <p class="md:col-span-2 text-stone-700 text-lg">
-            Check availability in real time and book in simple steps.
-          </p>
-          <a
-            href="/es/reservas"
-            class="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-white"
-            style="background:#C76B4E"
+          <h2
+            class="text-3xl md:text-[2.7rem] font-semibold text-stone-900 text-center pt-[5rem] hidden"
           >
-            See availability
-          </a>
+            Equipped cabins, ready all year round
+          </h2>
+          <p
+            class="mt-8 text-base md:text-[2.6rem] leading-relaxed text-stone-600"
+          >
+            At Finca Casiana, we offer fully equipped cabins ready to welcome
+            you at any time of year.
+          </p>
+
+          <!-- Features -->
+          <!-- Amenities-style -->
+          <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+            <!-- Naturaleza -->
+            <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+              <span class="text-stone-400 text-2xl"> 🌳 </span>
+              <div>
+                <h3
+                  class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+                >
+                  Surrounded by nature and tranquility
+                </h3>
+              </div>
+            </article>
+
+            <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+              <span class="text-stone-400 text-2xl"> 🛏️ </span>
+              <div>
+                <h3
+                  class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+                >
+                  Amenities
+                </h3>
+                <p
+                  class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2"
+                >
+                  Air conditioning/heating, fully equipped kitchen, bed linens,
+                  choice of double or single box springs, free Wi-Fi, smart TV
+                  with satellite dish.
+                </p>
+              </div>
+            </article>
+            <!-- Accesibilidad -->
+            <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+              <span class="text-stone-400 mt-1">
+                <img
+                  src={logo_d.src}
+                  alt="logo discapacidad"
+                  class="w-[1.6rem]"
+                />
+              </span>
+              <div>
+                <h3
+                  class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium pb-10 pt-4"
+                >
+                  Adapted for people with reduced mobility.
+                </h3>
+              </div>
+            </article>
+            <!-- Pet Friendly -->
+            <article class="grid grid-cols-[28px_1fr] items-start gap-3">
+              <span class="text-stone-400 text-2xl"> 🐾 </span>
+              <div>
+                <h3
+                  class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium pb-10 pt-4"
+                >
+                  Pet Friendly Accommodation
+                </h3>
+              </div>
+            </article>
+            <!-- Espacios Comunes -->
+            <article class="grid grid-cols-[28px_1fr] items-start gap-3 pb-10">
+              <span class="text-stone-400 text-2xl"> 🏡 </span>
+              <div>
+                <h3
+                  class="text-xl md:text-[1.4rem] leading-relaxed text-stone-600 font-medium"
+                >
+                  Common Spaces
+                </h3>
+                <p
+                  class="text-base md:text-lg leading-relaxed text-stone-600 font-normal mt-2"
+                >
+                  Pool with perimeter fence, green spaces, parking, grill and
+                  wood-burning oven, 7-a-side soccer field, and multi-purpose
+                  room (optional for social and corporate events)
+                </p>
+              </div>
+            </article>
+          </div>
+
+          <h2
+            class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+            class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+          >
+            CABINS FOR 3 PEOPLE
+          </h2>
+
+          <CarouselGallery
+            data={dataConfort}
+            intervalMs={3800}
+            groupBy="cabin"
+          />
+
+          <h2
+            class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+            class="mt-12 mb-8 text-base md:text-2xl font-semibold text-stone-900 uppercase"
+          >
+            CABIN FOR 5 OR 6 PEOPLE
+          </h2>
+
+          <CarouselGallery
+            data={dataNoConfort}
+            intervalMs={3800}
+            groupBy="cabin"
+          />
+
+          <div class="my-12 grid gap-3 md:grid-cols-3">
+            <div class="flex items-center gap-3">
+              <span class="text-emerald-600">✅</span>
+              <span class="text-stone-700">Online reservations</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-emerald-600">✅</span>
+              <span class="text-stone-700">Payment in cash or by transfer</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-emerald-600">✅</span>
+              <span class="text-stone-700"
+                >Direct attention via WhatsApp for inquiries</span
+              >
+            </div>
+          </div>
+
+          <!-- CTA / Pagos / Contacto -->
+          <div class="mt-10 grid gap-4 md:grid-cols-3 items-start">
+            <p class="md:col-span-2 text-stone-700 text-lg">
+              Check availability in real time and book in simple steps.
+            </p>
+            <a
+              href="/es/reservas"
+              class="inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold text-white"
+              style="background:#C76B4E"
+            >
+              See availability
+            </a>
+          </div>
         </div>
-      </div>
+      </section>
     </section>
-  </main></Base
->
+  </main>
+</Base>

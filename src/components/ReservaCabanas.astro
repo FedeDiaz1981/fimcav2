@@ -1,6 +1,4 @@
 ---
-/** ReservaCabanas.astro — ahora con i18n (es/en), sin strings hardcodeados **/
-
 // Tipos
 type Cabin = {
   id: string;
@@ -20,7 +18,13 @@ type BookingDict = {
   actions: { reserve: string; reset: string; close: string };
   hints: { selectCabin: string; invalidRange: string; unavailable: string };
   legend: { available: string; blocked: string; selected: string };
-  labels: { nights: string; name: string; phone: string; email: string; cabin: string };
+  labels: {
+    nights: string;
+    name: string;
+    phone: string;
+    email: string;
+    cabin: string;
+  };
   modal: { title: string; body: string; close?: string };
   aria: { prevMonth: string; nextMonth: string };
   units: { night_one: string; night_other: string };
@@ -33,61 +37,108 @@ interface Props {
   months?: number; // default 3
   minDate?: string; // ISO 'YYYY-MM-DD'
   dict?: Partial<BookingDict>; // i18n override (merge superficial)
-  locale?: 'es' | 'en'; // default 'es'
-  defaultNights?: number; // noches por defecto (default 2)
+  locale?: "es" | "en"; // default 'es'
+  defaultNights?: number; // noches por defecto (default 2) -- sigue llamándose así para compatibilidad
+  apiUrl?: string; // optional endpoint to load cabins/unavailable at runtime
 }
 
 const ES_DICT: BookingDict = {
   months: [
-    'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
   ],
-  weekdays: ['Lu','Ma','Mi','Ju','Vi','Sa','Do'],
-  actions: { reserve: 'Reservar', reset: 'Limpiar', close: 'Cerrar' },
+  weekdays: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"],
+  actions: { reserve: "Reservar", reset: "Limpiar", close: "Cerrar" },
   hints: {
-    selectCabin: 'Primero elegí una cabaña.',
-    invalidRange: 'El rango incluye fechas no disponibles.',
-    unavailable: 'No disponible',
+    selectCabin: "Primero elegí una cabaña.",
+    invalidRange: "El rango incluye fechas no disponibles.",
+    unavailable: "No disponible",
   },
-  legend: { available: 'Disponible', blocked: 'No disponible', selected: 'Seleccionado' },
-  labels: { nights: 'Noches:', name: 'Nombre *', phone: 'Celular *', email: 'Email *', cabin: 'Cabaña' },
+  legend: {
+    available: "Disponible",
+    blocked: "No disponible",
+    selected: "Seleccionado",
+  },
+  labels: {
+    nights: "Días:",
+    name: "Nombre *",
+    phone: "Celular *",
+    email: "Email *",
+    cabin: "Cabaña",
+  }, // etiqueta cambiada a "Días"
   modal: {
-    title: 'Pedido enviado',
-    body: 'Su pedido de reserva fue enviado. Nos pondremos en contacto para la confirmación. Gracias por elegirnos.',
-    close: 'Cerrar',
+    title: "Pedido enviado",
+    body: "Su pedido de reserva fue enviado. Nos pondremos en contacto para la confirmación. Gracias por elegirnos.",
+    close: "Cerrar",
   },
-  aria: { prevMonth: 'Mes anterior', nextMonth: 'Mes siguiente' },
-  units: { night_one: 'noche', night_other: 'noches' },
+  aria: { prevMonth: "Mes anterior", nextMonth: "Mes siguiente" },
+  units: { night_one: "día", night_other: "días" }, // unidades cambiadas
 };
 
 const EN_DICT: BookingDict = {
   months: [
-    'January','February','March','April','May','June','July','August','September','October','November','December',
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ],
-  weekdays: ['Mo','Tu','We','Th','Fr','Sa','Su'],
-  actions: { reserve: 'Reserve', reset: 'Clear', close: 'Close' },
+  weekdays: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+  actions: { reserve: "Reserve", reset: "Clear", close: "Close" },
   hints: {
-    selectCabin: 'Select a cabin first.',
-    invalidRange: 'The range includes unavailable dates.',
-    unavailable: 'Unavailable',
+    selectCabin: "Select a cabin first.",
+    invalidRange: "The range includes unavailable dates.",
+    unavailable: "Unavailable",
   },
-  legend: { available: 'Available', blocked: 'Unavailable', selected: 'Selected' },
-  labels: { nights: 'Nights:', name: 'Name *', phone: 'Phone *', email: 'Email *', cabin: 'Cabin' },
+  legend: {
+    available: "Available",
+    blocked: "Unavailable",
+    selected: "Selected",
+  },
+  labels: {
+    nights: "Days:",
+    name: "Name *",
+    phone: "Phone *",
+    email: "Email *",
+    cabin: "Cabin",
+  }, // etiqueta cambiada
   modal: {
-    title: 'Request sent',
+    title: "Request sent",
     body: "Your booking request was sent. We'll contact you to confirm. Thanks for choosing us.",
-    close: 'Close',
+    close: "Close",
   },
-  aria: { prevMonth: 'Previous month', nextMonth: 'Next month' },
-  units: { night_one: 'night', night_other: 'nights' },
+  aria: { prevMonth: "Previous month", nextMonth: "Next month" },
+  units: { night_one: "day", night_other: "days" }, // unidades cambiadas
 };
 
-function deepMerge<T extends Record<string, any>>(base: T, override?: Partial<T>): T {
+function deepMerge<T extends Record<string, any>>(
+  base: T,
+  override?: Partial<T>
+): T {
   const out: any = { ...base };
   if (!override) return out;
   for (const k of Object.keys(override)) {
     const ov: any = (override as any)[k];
     if (Array.isArray(ov)) out[k] = ov.slice();
-    else if (ov && typeof ov === 'object') out[k] = { ...(base as any)[k], ...ov };
+    else if (ov && typeof ov === "object")
+      out[k] = { ...(base as any)[k], ...ov };
     else if (ov !== undefined) out[k] = ov;
   }
   return out as T;
@@ -100,18 +151,19 @@ const {
   months = 3,
   minDate,
   dict,
-  locale = 'es',
+  locale = "es",
   defaultNights = 2,
+  apiUrl = "",
 } = Astro.props as Props;
 
-const BASE = locale === 'en' ? EN_DICT : ES_DICT;
+const BASE = locale === "en" ? EN_DICT : ES_DICT;
 const D = deepMerge(BASE, dict);
 
-function normalizeUnavailable(u: Props['unavailable']) {
+function normalizeUnavailable(u: Props["unavailable"]) {
   const map = new Map<string, Set<string>>();
   if (Array.isArray(u)) {
     for (const { cabinId, dates } of u) map.set(cabinId, new Set(dates || []));
-  } else if (u && typeof u === 'object') {
+  } else if (u && typeof u === "object") {
     for (const [cid, dates] of Object.entries(u)) map.set(cid, new Set(dates));
   }
   return map;
@@ -128,7 +180,7 @@ function toISO(d: Date) {
   return local.toISOString().slice(0, 10);
 }
 const minISO =
-  typeof minDate === 'string' && /\d{4}-\d{2}-\d{2}/.test(minDate)
+  typeof minDate === "string" && /\d{4}-\d{2}-\d{2}/.test(minDate)
     ? minDate
     : toISO(today);
 
@@ -149,11 +201,12 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
   data-comp="booking"
   data-cabins={cabinsPayload}
   data-unav={unavailablePayload}
-  data-only={onlyCabinId ?? ''}
+  data-only={onlyCabinId ?? ""}
   data-months={months}
   data-min={minISO}
   data-dict={dictPayload}
   data-nights={defaultNights}
+  data-api={apiUrl ?? ""}
 >
   <!-- Botonera (oculta si onlyCabinId) -->
   <div class="mb-4 flex flex-wrap gap-2" data-cabin-bar>
@@ -186,7 +239,6 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         ))
     }
   </div>
-
   <div class="rounded-2xl border p-4 sm:p-6 bg-white">
     <!-- Barra superior -->
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -308,11 +360,14 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       </div>
     </div>
   </div>
-
   <script is:inline>
     (() => {
-      const root = document.currentScript?.closest('section');
+      const root = document.currentScript?.closest("section");
       if (!root) return;
+
+      try {
+        console.debug("ReservaCabanas: script iniciado");
+      } catch {}
 
       // Payloads
       let CABINS = [];
@@ -320,21 +375,82 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       let DICT = {};
       try {
         CABINS = JSON.parse(
-          decodeURIComponent(root.dataset.cabins || '%5B%5D')
+          decodeURIComponent(root.dataset.cabins || "%5B%5D")
         );
-      } catch {}
+      } catch (e) {
+        console.warn("ReservaCabanas: parse cabins fallo", e);
+      }
       try {
-        UNAV = JSON.parse(decodeURIComponent(root.dataset.unav || '%7B%7D'));
-      } catch {}
+        UNAV = JSON.parse(decodeURIComponent(root.dataset.unav || "%7B%7D"));
+      } catch (e) {
+        console.warn("ReservaCabanas: parse unav fallo", e);
+      }
       try {
-        DICT = JSON.parse(decodeURIComponent(root.dataset.dict || '%7B%7D'));
-      } catch {}
-      const ONLY = root.dataset.only || '';
+        DICT = JSON.parse(decodeURIComponent(root.dataset.dict || "%7B%7D"));
+      } catch (e) {
+        console.warn("ReservaCabanas: parse dict fallo", e);
+      }
+      const ONLY = root.dataset.only || "";
+      const API = root.dataset.api || "";
       // Meses: en desktop se respeta el prop; en mobile (<640px) forzamos 1
       const BASE_MONTHS = Math.max(1, Number(root.dataset.months || 3));
       let VISIBLE_MONTHS = BASE_MONTHS;
 
-      const MQL_MOBILE = window.matchMedia('(max-width: 639px)');
+      // Helper para normalizar formatos de unavailable recibidos desde la API
+      function normalizeUnavPayload(u) {
+        const out = {};
+        if (!u) return out;
+        if (Array.isArray(u)) {
+          for (const it of u) {
+            if (!it) continue;
+            const cid = it.cabinId || it.id;
+            if (!cid) continue;
+            out[cid] = Array.isArray(it.dates) ? it.dates.slice() : [];
+          }
+        } else if (typeof u === "object") {
+          for (const [k, v] of Object.entries(u)) {
+            out[k] = Array.isArray(v) ? v.slice() : [];
+          }
+        }
+        return out;
+      }
+
+      async function loadFromApi() {
+        if (!API) return;
+        try {
+          console.debug("ReservaCabanas: cargando desde API", API);
+          const res = await fetch(API, { cache: "no-store" });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const json = await res.json();
+          if (Array.isArray(json)) {
+            CABINS = json;
+          } else {
+            if (Array.isArray(json.cabins)) CABINS = json.cabins;
+            else if (Array.isArray(json.data)) CABINS = json.data;
+            if (json.unavailable) UNAV = normalizeUnavPayload(json.unavailable);
+            else if (json.unav) UNAV = normalizeUnavPayload(json.unav);
+            else if (json.reservas) UNAV = normalizeUnavPayload(json.reservas);
+          }
+          // Si la API devolvió un map simple de unavailable, normalizamos
+          if (
+            (!UNAV || Object.keys(UNAV).length === 0) &&
+            json &&
+            json.unavailable &&
+            typeof json.unavailable === "object"
+          ) {
+            UNAV = normalizeUnavPayload(json.unavailable);
+          }
+          console.debug("ReservaCabanas: API cargada", { CABINS, UNAV });
+          // actualizar estado y UI mínimamente
+          cabinId = ONLY || CABINS[0]?.id || "";
+          recomputeFromStart(true);
+          renderAll();
+        } catch (err) {
+          console.warn("ReservaCabanas: falla al cargar API", API, err);
+        }
+      }
+
+      const MQL_MOBILE = window.matchMedia("(max-width: 639px)");
       function applyResponsiveMonths(shouldRender = false) {
         const next = MQL_MOBILE.matches ? 1 : BASE_MONTHS;
         if (next !== VISIBLE_MONTHS) {
@@ -344,63 +460,63 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       }
       // set inicial + listener (compat)
       applyResponsiveMonths(false);
-      if (typeof MQL_MOBILE.addEventListener === 'function') {
-        MQL_MOBILE.addEventListener('change', () =>
+      if (typeof MQL_MOBILE.addEventListener === "function") {
+        MQL_MOBILE.addEventListener("change", () =>
           applyResponsiveMonths(true)
         );
       } else {
         // Safari viejo
         MQL_MOBILE.addListener(() => applyResponsiveMonths(true));
       }
-      const MIN_ISO = root.dataset.min || '';
+      const MIN_ISO = root.dataset.min || "";
 
       // Estado
-      let nights = Math.max(1, Number(root.dataset.nights || 2));
-      let cabinId = ONLY || CABINS[0]?.id || '';
-      let startISO = '';
-      let endISO = '';
+      let nights = Math.max(1, Number(root.dataset.nights || 2)); // sigue llamándose 'nights' internamente, pero ahora representa DÍAS
+      let cabinId = ONLY || CABINS[0]?.id || "";
+      let startISO = "";
+      let endISO = "";
       let focusDate = parseISO(MIN_ISO) || todayLocal();
 
       // Refs UI
-      const bar = root.querySelector('[data-cabin-bar]');
-      const nightsInput = root.querySelector('[data-nights-input]');
-      const currentCabinEl = root.querySelector('[data-current-cabin]');
-      const calWrap = root.querySelector('[data-calendars]');
-      const hintEl = root.querySelector('[data-hint]');
-      const summaryEl = root.querySelector('[data-summary]');
-      const resetBtn = root.querySelector('[data-reset]');
-      const submitBtn = root.querySelector('[data-submit]');
-      const fName = root.querySelector('[data-fname]');
-      const fPhone = root.querySelector('[data-phone]');
-      const fMail = root.querySelector('[data-mail]');
+      const bar = root.querySelector("[data-cabin-bar]");
+      const nightsInput = root.querySelector("[data-nights-input]");
+      const currentCabinEl = root.querySelector("[data-current-cabin]");
+      const calWrap = root.querySelector("[data-calendars]");
+      const hintEl = root.querySelector("[data-hint]");
+      const summaryEl = root.querySelector("[data-summary]");
+      const resetBtn = root.querySelector("[data-reset]");
+      const submitBtn = root.querySelector("[data-submit]");
+      const fName = root.querySelector("[data-fname]");
+      const fPhone = root.querySelector("[data-phone]");
+      const fMail = root.querySelector("[data-mail]");
 
-      const modal = root.querySelector('[data-modal]');
-      const modalOv = root.querySelector('[data-modal-overlay]');
-      const modalClose = root.querySelector('[data-modal-close]');
+      const modal = root.querySelector("[data-modal]");
+      const modalOv = root.querySelector("[data-modal-overlay]");
+      const modalClose = root.querySelector("[data-modal-close]");
 
       if (ONLY) {
-        bar?.classList.add('hidden');
+        bar?.classList.add("hidden");
       }
 
       // Botonera de cabañas
-      const chips = Array.from(root.querySelectorAll('.cabin-chip'));
+      const chips = Array.from(root.querySelectorAll(".cabin-chip"));
       chips.forEach((ch) =>
-        ch.addEventListener('click', () => {
-          const id = ch.getAttribute('data-cabin') || '';
+        ch.addEventListener("click", () => {
+          const id = ch.getAttribute("data-cabin") || "";
           if (!id) return;
           cabinId = id;
           recomputeFromStart(true);
           chips.forEach((x) => {
             const act = x === ch;
             x.dataset.active = String(act);
-            x.setAttribute('aria-pressed', String(act));
+            x.setAttribute("aria-pressed", String(act));
           });
           renderAll();
         })
       );
 
       // Inputs
-      nightsInput?.addEventListener('input', () => {
+      nightsInput?.addEventListener("input", () => {
         const n = Math.max(
           1,
           Math.min(30, Number(nightsInput.value || nights))
@@ -412,58 +528,85 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
           endISO = fits
             ? addDaysISO(startISO, nights)
             : findFirstSpan(cabinId, MIN_ISO, nights).endISO;
-          if (!endISO) startISO = '';
+          if (!endISO) startISO = "";
         }
         renderAll();
       });
 
       [fName, fPhone, fMail].forEach((inp) =>
-        inp?.addEventListener('input', updateSubmitState)
+        inp?.addEventListener("input", updateSubmitState)
       );
 
-      resetBtn?.addEventListener('click', () => {
-        startISO = '';
-        endISO = '';
-        fName.value = '';
-        fPhone.value = '';
-        fMail.value = '';
+      resetBtn?.addEventListener("click", () => {
+        startISO = "";
+        endISO = "";
+        fName.value = "";
+        fPhone.value = "";
+        fMail.value = "";
         renderAll();
       });
 
-      submitBtn?.addEventListener('click', () => {
+      submitBtn?.addEventListener("click", async () => {
         if (!cabinId || !startISO || !endISO) {
           hintEl.textContent =
-            DICT.hints?.invalidRange || 'Select a valid range.';
+            DICT.hints?.invalidRange || "Select a valid range.";
           return;
         }
         if (!fName.value || !fPhone.value || !fMail.value) {
+          hintEl.textContent = "Complete los datos requeridos.";
           return;
         }
-        const nightsNum = nightsCount(startISO, endISO);
-        console.log('Reserva exitosa', {
+
+        // Preparar payload
+        const payload = {
+          nombre: fName.value.trim(),
+          email: fMail.value.trim(),
+          telefono: fPhone.value.trim(),
           cabinId,
           startISO,
           endISO,
-          nights: nightsNum,
-          name: fName.value,
-          phone: fPhone.value,
-          mail: fMail.value,
-        });
-        openModal();
+          days: nightsCount(startISO, endISO),
+          notes: "", // si querés agregar un campo notas en el form ponlo y enviá aquí
+        };
+
+        // Indicar envío
+        submitBtn.setAttribute("disabled", "true");
+        submitBtn.textContent = "Enviando...";
+
+        try {
+          const res = await fetch("http://localhost:8000/contact.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json();
+          if (res.ok && json.ok) {
+            // éxito: mostrar modal / limpiar si querés
+            openModal();
+          } else {
+            hintEl.textContent = json?.error || "Error al enviar";
+          }
+        } catch (err) {
+          console.error("Enviar reserva error", err);
+          hintEl.textContent = "Error de red al enviar. Intentá de nuevo.";
+        } finally {
+          submitBtn.removeAttribute("disabled");
+          submitBtn.textContent = DICT.actions?.reserve || "Reservar";
+        }
       });
 
-      modalOv?.addEventListener('click', closeModal);
-      modalClose?.addEventListener('click', closeModal);
+      modalOv?.addEventListener("click", closeModal);
+      modalClose?.addEventListener("click", closeModal);
 
       function openModal() {
-        modal?.classList.remove('hidden');
-        modal?.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
+        modal?.classList.remove("hidden");
+        modal?.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
       }
       function closeModal() {
-        modal?.classList.add('hidden');
-        modal?.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
+        modal?.classList.add("hidden");
+        modal?.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
       }
 
       // --- Utilidades de fechas ---
@@ -473,16 +616,16 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         return d;
       }
       function parseISO(s) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return null;
-        const [y, m, d] = s.split('-').map(Number);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(s || "")) return null;
+        const [y, m, d] = s.split("-").map(Number);
         const dt = new Date(y, m - 1, d);
         dt.setHours(0, 0, 0, 0);
         return dt;
       }
       function toISO(d) {
         const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
         return `${y}-${m}-${day}`;
       }
       function addMonths(d, n) {
@@ -520,7 +663,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       }
       function addDaysISO(iso, days) {
         const d = parseISO(iso);
-        if (!d) return '';
+        if (!d) return "";
         d.setDate(d.getDate() + days);
         return toISO(d);
       }
@@ -532,7 +675,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
           if (!isPast(iso) && isRangeClearFor(cId, iso, nights)) return iso;
           cur.setDate(cur.getDate() + 1);
         }
-        return '';
+        return "";
       }
       function findFirstSpan(cId, fromISO, nights, maxDays = 365) {
         const start = parseISO(fromISO) || todayLocal();
@@ -543,7 +686,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
             return { startISO: iso, endISO: addDaysISO(iso, nights) };
           cur.setDate(cur.getDate() + 1);
         }
-        return { startISO: '', endISO: '' };
+        return { startISO: "", endISO: "" };
       }
 
       function nightsCount(aISO, bISO) {
@@ -555,7 +698,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
 
       function recomputeFromStart(restart = false) {
         startISO = findFirstFree(cabinId, MIN_ISO);
-        endISO = startISO ? addDaysISO(startISO, nights) : '';
+        endISO = startISO ? addDaysISO(startISO, nights) : "";
         if (!endISO || !isRangeClearFor(cabinId, startISO, nights)) {
           const span = findFirstSpan(cabinId, MIN_ISO, nights);
           startISO = span.startISO;
@@ -567,14 +710,14 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       function renderCalendars() {
         if (!calWrap) return;
         const firstMonth = startOfMonth(focusDate);
-        let html = '';
+        let html = "";
         for (let i = 0; i < VISIBLE_MONTHS; i++)
           html += renderMonth(addMonths(firstMonth, i));
         calWrap.innerHTML = html;
-        calWrap.querySelectorAll('[data-day]')?.forEach((el) => {
-          el.addEventListener('click', () => {
-            const iso = el.getAttribute('data-day') || '';
-            const disabled = el.getAttribute('data-disabled') === 'true';
+        calWrap.querySelectorAll("[data-day]")?.forEach((el) => {
+          el.addEventListener("click", () => {
+            const iso = el.getAttribute("data-day") || "";
+            const disabled = el.getAttribute("data-disabled") === "true";
             if (!iso) return;
             onDayClick(iso, disabled);
           });
@@ -591,7 +734,7 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         const pad = dowMondayFirst(first) - 1;
 
         const cells = [];
-        for (let i = 0; i < pad; i++) cells.push({ iso: '', blank: true });
+        for (let i = 0; i < pad; i++) cells.push({ iso: "", blank: true });
         for (let d = 1; d <= dim; d++) {
           const date = new Date(y, m, d);
           const iso = toISO(date);
@@ -599,37 +742,37 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
             !isPast(iso) && isRangeClearFor(cabinId, iso, nights);
           cells.push({ iso, blank: false, disabled: !canStart });
         }
-        while (cells.length % 7) cells.push({ iso: '', blank: true });
+        while (cells.length % 7) cells.push({ iso: "", blank: true });
 
         const head = (DICT.weekdays || [])
           .map(
             (w) =>
               `<div class="text-[11px] md:text-xs text-gray-500 text-center font-medium tracking-wide">${w}</div>`
           )
-          .join('');
+          .join("");
 
         const grid = cells
           .map((c) => {
             if (c.blank) return `<div class='h-8 md:h-9'></div>`;
             const d = Number(c.iso.slice(8, 10));
-            const dis = c.disabled ? 'true' : 'false';
+            const dis = c.disabled ? "true" : "false";
             const baseCls =
-              'h-8 w-8 md:h-9 md:w-9 rounded-full text-sm flex items-center justify-center select-none';
+              "h-8 w-8 md:h-9 md:w-9 rounded-full text-sm flex items-center justify-center select-none";
             const disCls = c.disabled
-              ? ' text-gray-300 cursor-not-allowed'
-              : ' text-gray-700 hover:bg-gray-100';
+              ? " text-gray-300 cursor-not-allowed"
+              : " text-gray-700 hover:bg-gray-100";
             return `<button data-day='${c.iso}' data-disabled='${dis}'
               class='${baseCls + disCls}' aria-label='${c.iso}'>${d}</button>`;
           })
-          .join('');
+          .join("");
 
         return `
     <div class="rounded-2xl p-2 md:p-3">
       <div class="mb-2 flex items-center justify-between">
         <div class="text-gray-700 font-medium">${monthName} ${y}</div>
         <div class="flex gap-1">
-          <button type="button" data-prev-month class="cal-nav-btn" aria-label="${DICT.aria?.prevMonth || 'Previous month'}">◀</button>
-          <button type="button" data-next-month class="cal-nav-btn" aria-label="${DICT.aria?.nextMonth || 'Next month'}">▶</button>
+          <button type="button" data-prev-month class="cal-nav-btn" aria-label="${DICT.aria?.prevMonth || "Previous month"}">◀</button>
+          <button type="button" data-next-month class="cal-nav-btn" aria-label="${DICT.aria?.nextMonth || "Next month"}">▶</button>
         </div>
       </div>
       <div class="grid grid-cols-7 gap-1 mb-1">${head}</div>
@@ -640,19 +783,18 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       function onDayClick(iso, disabled) {
         if (disabled) return;
         if (!cabinId) {
-          hintEl.textContent =
-            DICT.hints?.selectCabin || 'Select a cabin.';
+          hintEl.textContent = DICT.hints?.selectCabin || "Select a cabin.";
           return;
         }
-        hintEl.textContent = '';
+        hintEl.textContent = "";
         startISO = iso;
-        endISO = addDaysISO(startISO, nights);
+        endISO = addDaysISO(startISO, nights); // end exclusivo
         if (!isRangeClearFor(cabinId, startISO, nights)) {
           const span = findFirstSpan(cabinId, startISO, nights);
           startISO = span.startISO;
           endISO = span.endISO;
           if (!startISO) {
-            hintEl.textContent = DICT.hints?.invalidRange || 'Invalid range.';
+            hintEl.textContent = DICT.hints?.invalidRange || "Invalid range.";
           }
         }
         renderSummary();
@@ -660,13 +802,13 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
       }
 
       function paintSelection() {
-        const btns = calWrap.querySelectorAll('[data-day]');
+        const btns = calWrap.querySelectorAll("[data-day]");
         btns.forEach((btn) => {
-          btn.classList.remove('sel'); // limpiador simple
-          const iso = btn.getAttribute('data-day');
+          btn.classList.remove("sel"); // limpiador simple
+          const iso = btn.getAttribute("data-day");
           if (startISO && endISO && inRange(iso, startISO, endISO))
-            btn.classList.add('sel');
-          else if (startISO && iso === startISO) btn.classList.add('sel');
+            btn.classList.add("sel");
+          else if (startISO && iso === startISO) btn.classList.add("sel");
         });
       }
 
@@ -678,44 +820,45 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         if (!x || !a || !b) return false;
         const s = a <= b ? a : b;
         const e = a <= b ? b : a;
-        return x >= s && x <= e;
+        // rango [s, e) — incluye s, excluye e (para que marcar 2 días marque exactamente 2 celdas)
+        return x >= s && x < e;
       }
 
       function bindMonthNav() {
-        calWrap.addEventListener('click', (e) => {
+        calWrap.addEventListener("click", (e) => {
           const t = e.target;
           if (!(t instanceof Element)) return;
-          if (t.hasAttribute('data-prev-month')) {
+          if (t.hasAttribute("data-prev-month")) {
             focusDate = addMonths(startOfMonth(focusDate), -1);
             renderCalendars();
           }
-          if (t.hasAttribute('data-next-month')) {
+          if (t.hasAttribute("data-next-month")) {
             focusDate = addMonths(startOfMonth(focusDate), +1);
             renderCalendars();
           }
         });
       }
 
-      function pluralNight(n) {
+      function pluralDay(n) {
         return n === 1
-          ? (DICT.units?.night_one || 'night')
-          : (DICT.units?.night_other || 'nights');
+          ? DICT.units?.night_one || "día"
+          : DICT.units?.night_other || "días";
       }
 
       function renderSummary() {
         if (startISO && endISO) {
           const nightsNum = nightsCount(startISO, endISO);
-          summaryEl.textContent = `${formatHuman(startISO)} → ${formatHuman(endISO)} • ${nightsNum} ${pluralNight(nightsNum)}`;
+          summaryEl.textContent = `${formatHuman(startISO)} → ${formatHuman(endISO)} • ${nightsNum} ${pluralDay(nightsNum)}`;
         } else if (startISO) {
           summaryEl.textContent = `${formatHuman(startISO)} —`;
         } else {
-          summaryEl.textContent = '';
+          summaryEl.textContent = "";
         }
         if (currentCabinEl) {
           const cab = CABINS.find((c) => c.id === cabinId);
           currentCabinEl.textContent = cab
-            ? (cab.name || `${DICT.labels?.cabin || 'Cabin'} ${cab.id}`)
-            : '';
+            ? cab.name || `${DICT.labels?.cabin || "Cabin"} ${cab.id}`
+            : "";
         }
         updateSubmitState();
       }
@@ -723,28 +866,35 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
         const d = parseISO(iso);
         if (!d) return iso;
         const m = (DICT.months || [])[d.getMonth()] || String(d.getMonth() + 1);
-        return `${String(d.getDate()).padStart(2, '0')} ${m} ${d.getFullYear()}`;
-        }
+        return `${String(d.getDate()).padStart(2, "0")} ${m} ${d.getFullYear()}`;
+      }
 
       function updateSubmitState() {
         const okFields = !!(fName?.value && fPhone?.value && fMail?.value);
         const okDates = !!(startISO && endISO);
-        if (okFields && okDates) submitBtn?.removeAttribute('disabled');
-        else submitBtn?.setAttribute('disabled', 'true');
+        if (okFields && okDates) submitBtn?.removeAttribute("disabled");
+        else submitBtn?.setAttribute("disabled", "true");
       }
 
       function renderAll() {
         if (!startISO || !endISO) recomputeFromStart(true);
         renderCalendars();
         renderSummary();
-        hintEl.textContent = '';
+        hintEl.textContent = "";
         bindMonthNav();
       }
 
       // Init
-      recomputeFromStart(true);
-      applyResponsiveMonths(false);
-      renderAll();
+      // si hay API, cargar primero; loadFromApi llamará a renderAll al terminar
+      if (API) {
+        loadFromApi().then(() => {
+          // ya renderizado por loadFromApi
+        });
+      } else {
+        recomputeFromStart(true);
+        applyResponsiveMonths(false);
+        renderAll();
+      }
     })();
   </script>
 </section>
@@ -769,12 +919,12 @@ const uid = `bk-${Math.random().toString(36).slice(2)}`;
   }
 
   /* Días que no pueden iniciar */
-  [data-calendars] [data-day][data-disabled='true'] {
+  [data-calendars] [data-day][data-disabled="true"] {
     @apply text-gray-300;
   }
 
   /* Contenedor aireado */
-  [data-comp='booking'] .rounded-2xl.border {
+  [data-comp="booking"] .rounded-2xl.border {
     border-color: #e5e7eb;
   }
 </style>
