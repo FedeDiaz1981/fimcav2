@@ -1,14 +1,12 @@
 <?php
-// config.php (ejemplo) -- ponelo en la raíz (junto a contact.php) para pruebas locales.
-// IMPORTANTE: rota credenciales si son reales y NO subas esto a un repo público.
-
 return [
-  'SMTP_HOST' => 'smtp.gmail.com',
-  'SMTP_PORT' => 465, // 465 SMTPS, 587 STARTTLS
-  'SMTP_USER' => 'federicodiaz1981@gmail.com',
-  'SMTP_PASS' => 'huwl zqcy velq ookk', // tu app-password (ejemplo)
-  'SMTP_TO'   => 'fediaz3100@gmail.com',
-
-  // Opcional: nombre para mostrar
-  'FROM_NAME' => 'Nueva Celina & Asoc',
+  'SMTP_HOST'   => 'smtp.gmail.com',
+  'SMTP_USER'   => 'federicodiaz1981@gmail.com',
+  'SMTP_PASS'   => 'fvsx pkei qqgn coyl',
+  'SMTP_SECURE' => 'ssl',   // ó 'tls'
+  'SMTP_PORT'   => 465,     // si usás 'ssl' → 465 ; si usás 'tls' → 587
+  'FROM_NAME'   => 'Reservas Web',
+  'SMTP_TO'     => 'info@fincaciana.com',
+  // Opcional en dev:
+  'DEBUG_SMTP'  => true,
 ];

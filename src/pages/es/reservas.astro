@@ -112,8 +112,14 @@ const reservas = {};
 //   ],
 // };
 
-const cabs = [{ id: "1" }, { id: "2" }, { id: "3" }, { id: "4" }, { id: "5" }, { id: "6" }];
-
+const cabs = [
+  { id: "1" },
+  { id: "2" },
+  { id: "3" },
+  { id: "4" },
+  { id: "5" },
+  { id: "6" },
+];
 
 import Testimonios from "../../components/Testimonios.astro";
 
@@ -140,22 +146,28 @@ const opiniones = [
 
 <Base lang={lang} title={t.header.title}>
   <main class="container mx-auto p-6">
-    <section class="flex-block flex-column justify-items-left md:px-[15rem] my-20">
-      <p class="mt-10 text-base md:text-4xl leading-relaxed text-stone-600 mb-4 md:pt-8">
-        Elegí si querés reservar una cabaña y seleccioná la fecha, cantidad de personas y completá tus datos.
+    <section
+      class="flex-block flex-column justify-items-left md:px-[15rem] my-20"
+    >
+      <p
+        class="mt-10 text-base md:text-4xl leading-relaxed text-stone-600 mb-4 md:pt-8"
+      >
+        Elegí si querés reservar una cabaña y seleccioná la fecha, cantidad de
+        personas y completá tus datos.
       </p>
     </section>
     <section class="">
-       <ReservaCabanas 
+      <ReservaCabanas
         cabins={cabs}
         unavailable={reservas}
         months={3}
         defaultNights={2}
         locale="es"
-      /> 
+        submitUrl="/api/send_reserva.php"
+      />
     </section>
-    <section class="mt-[7rem] mb-8">
+    <!-- <section class="mt-[7rem] mb-8">
       <Testimonios items={opiniones} titulo="Opiniones de Finca Casiana" />
-    </section>
+    </section> -->
   </main>
 </Base>
